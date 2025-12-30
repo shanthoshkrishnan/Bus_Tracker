@@ -1,11 +1,11 @@
 # 🚌 Panimalar Smart Bus Management System
 
-> A comprehensive Flutter-based real-time bus tracking and management system built for Panimalar Engineering College.
+A comprehensive Flutter-based real-time bus tracking and management solution that enables students to track buses, receive notifications, and helps administrators manage the entire fleet efficiently.
 
-**Project Status**: 🔥 Hackathon Submission  
-**Platform**: Flutter (Cross-platform)  
-**Backend**: Firebase (Firestore, Authentication, Cloud Functions)  
-**Team**: Panimalar Engineering College
+**Status**: Production Ready  
+**Platform**: Flutter (iOS, Android, Windows, Linux, macOS)  
+**Backend**: Firebase Firestore + Authentication + Cloud Messaging  
+**Version**: 1.0.0
 
 ---
 
