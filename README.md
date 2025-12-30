@@ -254,11 +254,7 @@ Authentication → Sign-in method:
 ✓ Anonymous (enable for demo)
 ```
 
-#### 5. Configure Firestore Rules
-
-See [FIRESTORE_PERMISSION_FIX_QUICK.md](FIRESTORE_PERMISSION_FIX_QUICK.md) for complete rules.
-
-#### 6. Setup Admin Custom Claims
+#### 5. Setup Admin Custom Claims
 
 ```bash
 # Option 1: Firebase Console
@@ -448,9 +444,7 @@ A comprehensive Flutter mobile application that provides:
 ### Important Documents
 
 1. **[HACKATHON_PROGRESS.md](HACKATHON_PROGRESS.md)** - What's done, what's pending
-2. **[FIRESTORE_PERMISSION_FIX_QUICK.md](FIRESTORE_PERMISSION_FIX_QUICK.md)** - Firestore rules
-3. **[ADVANCED_ROUTE_MANAGEMENT.md](ADVANCED_ROUTE_MANAGEMENT.md)** - Route setup
-4. **[VERIFICATION_GUIDE_SESSION_3.md](VERIFICATION_GUIDE_SESSION_3.md)** - Testing guide
+
 
 ### Common Issues
 
@@ -539,8 +533,8 @@ This project is created for Panimalar Engineering College Hackathon.
 
 ## 👥 Team
 
-- **Project Lead**: [Your Name]
-- **Developers**: [Team Members]
+- **Project Lead**: SHANTHOSH K
+- **Developers**: BIBIN ROBASE, KAAMALAESH
 - **Mentors**: Panimalar Engineering College Faculty
 
 ---
@@ -548,8 +542,7 @@ This project is created for Panimalar Engineering College Hackathon.
 ## 📞 Contact
 
 - **College**: Panimalar Engineering College
-- **Email**: hackathon@panimalar.ac.in
-- **Website**: www.panimalar.ac.in
+- **Email**: shanthosh.krishnan@outlook.com
 
 ---
 
