@@ -49,6 +49,7 @@ class LocationTrackingService {
       }
       return [];
     } catch (e) {
+      // ignore: avoid_print
       print('❌ Error fetching bus locations: $e');
       return [];
     }
@@ -63,6 +64,7 @@ class LocationTrackingService {
       }
       return null;
     } catch (e) {
+      // ignore: avoid_print
       print('❌ Error fetching bus location: $e');
       return null;
     }
