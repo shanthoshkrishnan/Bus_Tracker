@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/bus_model.dart';
 
 class BusDetailsPopup extends StatefulWidget {
@@ -16,13 +15,7 @@ class BusDetailsPopup extends StatefulWidget {
 }
 
 class _BusDetailsPopupState extends State<BusDetailsPopup> {
-  late MapController _mapController;
-
-  @override
-  void initState() {
-    super.initState();
-    _mapController = MapController();
-  }
+  GoogleMapController? _mapController;
 
   @override
   Widget build(BuildContext context) {
@@ -36,47 +29,62 @@ class _BusDetailsPopupState extends State<BusDetailsPopup> {
     );
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: Colors.white,
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Header
             Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFF2196F3),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF18181B),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
                 ),
               ),
-              padding: const EdgeInsets.all(16),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '🚌 Bus Details',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.directions_bus_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Bus Details',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Bus #${widget.bus.busNumber}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.white70,
+                        Text(
+                          'Bus #${widget.bus.busNumber}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.7),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
+                    icon: const Icon(Icons.close, color: Colors.white, size: 20),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -85,77 +93,44 @@ class _BusDetailsPopupState extends State<BusDetailsPopup> {
 
             // Map Section
             Container(
-              height: 300,
+              height: 260,
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!),
+                border: Border.all(color: const Color(0xFFE4E4E7)),
               ),
-              child: FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: departureLocation,
-                  initialZoom: 13.0,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: departureLocation,
+                    zoom: 13.0,
+                  ),
+                  onMapCreated: (GoogleMapController controller) {
+                    setState(() => _mapController = controller);
+                  },
+                  markers: {
+                    Marker(
+                      markerId: const MarkerId('departure'),
+                      position: departureLocation,
+                      icon: BitmapDescriptor.defaultMarkerWithHue(
+                        BitmapDescriptor.hueGreen,
+                      ),
+                      infoWindow: const InfoWindow(title: 'Departure'),
+                    ),
+                    Marker(
+                      markerId: const MarkerId('arrival'),
+                      position: arrivalLocation,
+                      icon: BitmapDescriptor.defaultMarkerWithHue(
+                        BitmapDescriptor.hueRed,
+                      ),
+                      infoWindow: const InfoWindow(title: 'Arrival'),
+                    ),
+                  },
+                  mapType: MapType.normal,
+                  myLocationEnabled: false,
+                  myLocationButtonEnabled: false,
                 ),
-                children: [
-                  TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.example.bus_tracker',
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      // Departure marker
-                      Marker(
-                        point: departureLocation,
-                        width: 40,
-                        height: 40,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.green.withOpacity(0.5),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.location_on,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                      // Arrival marker
-                      Marker(
-                        point: arrivalLocation,
-                        width: 40,
-                        height: 40,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.red.withOpacity(0.5),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.location_on,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ),
             ),
 
@@ -164,96 +139,116 @@ class _BusDetailsPopupState extends State<BusDetailsPopup> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
-                  // Bus Information
+                  // Bus Info
                   _buildDetailCard(
-                    icon: Icons.directions_bus,
+                    icon: Icons.directions_bus_outlined,
                     label: 'Bus Number',
                     value: widget.bus.busNumber,
-                    color: const Color(0xFF2196F3),
                   ),
+                  const SizedBox(height: 10),
                   _buildDetailCard(
-                    icon: Icons.route,
+                    icon: Icons.route_outlined,
                     label: 'Route',
-                    value:
-                        '${widget.bus.departureLocation} → ${widget.bus.arrivalLocation}',
-                    color: const Color(0xFF2196F3),
+                    value: '${widget.bus.departureLocation} → ${widget.bus.arrivalLocation}',
                   ),
 
                   const SizedBox(height: 16),
-                  const Divider(),
+                  Divider(color: const Color(0xFFE4E4E7), height: 1),
                   const SizedBox(height: 16),
 
-                  // Location Information
+                  // Location Info
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.green[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green[200]!),
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF86EFAC)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          '📍 Departure',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                          ),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              color: const Color(0xFF16A34A),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Departure',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF16A34A),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Text(
                           widget.bus.departureLocation,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF18181B),
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Text(
                           '${widget.bus.departureLatitude.toStringAsFixed(4)}, ${widget.bus.departureLongitude.toStringAsFixed(4)}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: const Color(0xFF71717A),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.red[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red[200]!),
+                      color: const Color(0xFFFEE2E2),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFECACA)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          '🎯 Arrival',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red,
-                          ),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.flag_outlined,
+                              color: const Color(0xFFDC2626),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Arrival',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFFDC2626),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Text(
                           widget.bus.arrivalLocation,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF18181B),
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Text(
                           '${widget.bus.arrivalLatitude.toStringAsFixed(4)}, ${widget.bus.arrivalLongitude.toStringAsFixed(4)}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: const Color(0xFF71717A),
                           ),
                         ),
                       ],
@@ -261,41 +256,37 @@ class _BusDetailsPopupState extends State<BusDetailsPopup> {
                   ),
 
                   const SizedBox(height: 16),
-                  const Divider(),
+                  Divider(color: const Color(0xFFE4E4E7), height: 1),
                   const SizedBox(height: 16),
 
-                  // Driver Information
+                  // Driver Info
                   _buildDetailCard(
-                    icon: Icons.person,
+                    icon: Icons.person_outline,
                     label: 'Driver Name',
                     value: widget.bus.driverName,
-                    color: const Color(0xFF9C27B0),
                   ),
+                  const SizedBox(height: 10),
                   _buildDetailCard(
-                    icon: Icons.phone,
+                    icon: Icons.phone_outlined,
                     label: 'Driver Phone',
                     value: widget.bus.driverPhone,
-                    color: const Color(0xFF9C27B0),
                   ),
 
                   const SizedBox(height: 16),
-                  const Divider(),
+                  Divider(color: const Color(0xFFE4E4E7), height: 1),
                   const SizedBox(height: 16),
 
-                  // Vehicle Information
+                  // Vehicle Info
                   _buildDetailCard(
-                    icon: Icons.confirmation_number,
-                    label: 'Vehicle Number (Plate)',
+                    icon: Icons.local_shipping_outlined,
+                    label: 'Vehicle Number',
                     value: widget.bus.vehicleNumber,
-                    color: const Color(0xFFFF9800),
                   ),
+                  const SizedBox(height: 10),
                   _buildDetailCard(
-                    icon: Icons.info,
+                    icon: Icons.info_outline,
                     label: 'Status',
                     value: widget.bus.status.toUpperCase(),
-                    color: widget.bus.status == 'active'
-                        ? const Color(0xFF4CAF50)
-                        : const Color(0xFFF44336),
                   ),
                 ],
               ),
@@ -308,19 +299,20 @@ class _BusDetailsPopupState extends State<BusDetailsPopup> {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF8B6F47),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    backgroundColor: const Color(0xFF18181B),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                     ),
+                    elevation: 0,
                   ),
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text(
+                  child: Text(
                     'Close',
                     style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -336,19 +328,17 @@ class _BusDetailsPopupState extends State<BusDetailsPopup> {
     required IconData icon,
     required String label,
     required String value,
-    required Color color,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE4E4E7)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 24),
+          Icon(icon, color: const Color(0xFF71717A), size: 18),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -358,16 +348,17 @@ class _BusDetailsPopupState extends State<BusDetailsPopup> {
                   label,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF71717A),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF18181B),
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

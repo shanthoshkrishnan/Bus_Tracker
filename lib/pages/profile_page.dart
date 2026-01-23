@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/firebase_service.dart';
+import '../services/driver_sync_service.dart';
 import '../services/location_service.dart';
 
 class ProfilePage extends StatefulWidget {
   final String userId;
   final String userRole;
+  final String? userName;
+  final String? userEmail;
 
   const ProfilePage({
     super.key,
     required this.userId,
     required this.userRole,
+    this.userName,
+    this.userEmail,
   });
 
   @override
@@ -108,38 +114,69 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _updateProfileFields() async {
     try {
-      final updateData = {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Fetch current user data to preserve other fields
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .get();
+      final currentData = userDoc.data() ?? {};
+
+      // Get current role for change detection
+      final currentRole = (currentData['role'] ?? 'student').toString().toLowerCase();
+
+      // Prepare additional data beyond what updateUserProfile handles
+      final additionalData = {
         'year': _academicYearController.text.trim(),
         'department': _departmentController.text.trim(),
-        'updatedAt': FieldValue.serverTimestamp(),
       };
-      
+
       // Add home location if student and not empty
       if (widget.userRole.toLowerCase() == 'student' && _homeLocationController.text.isNotEmpty) {
-        updateData['homeLocation'] = _homeLocationController.text.trim();
+        additionalData['homeLocation'] = _homeLocationController.text.trim();
       }
-      
+
       // Capture current location and store as lastKnownLocation
       try {
         final position = await LocationService().getCurrentLocation();
         if (position != null) {
-          updateData['lastKnownLatitude'] = position.latitude;
-          updateData['lastKnownLongitude'] = position.longitude;
-          updateData['lastLocationUpdate'] = FieldValue.serverTimestamp();
+          additionalData['lastKnownLatitude'] = position.latitude.toString();
+          additionalData['lastKnownLongitude'] = position.longitude.toString();
+          additionalData['lastLocationUpdate'] = DateTime.now().toIso8601String();
         }
       } catch (e) {
         print('Could not capture location: $e');
         // Continue with profile update even if location capture fails
       }
-      
+
+      // Update profile using FirebaseService (triggers automatic driver sync)
+      await FirebaseService().updateUserProfile(
+        userId: widget.userId,
+        firstName: currentData['firstName'] ?? '',
+        lastName: currentData['lastName'] ?? '',
+        phone: currentData['phone'] ?? '',
+        address: currentData['address'] ?? '',
+        role: currentRole,
+      );
+
+      // Update additional profile fields
       await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.userId)
-          .update(updateData);
+          .update(additionalData);
+
+      // Also sync driver if role is driver (in addition to updateUserProfile)
+      if (currentRole == 'driver') {
+        await DriverSyncService().syncOnProfileUpdate(widget.userId);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully!')),
+          const SnackBar(content: Text('✓ Profile updated successfully!')),
         );
         setState(() {
           _isEditMode = false;
@@ -152,6 +189,7 @@ class _ProfilePageState extends State<ProfilePage> {
           SnackBar(content: Text('Error updating profile: $e')),
         );
       }
+      print('Profile update error: $e');
     }
   }
 
@@ -171,25 +209,6 @@ class _ProfilePageState extends State<ProfilePage> {
         return '👨‍💼';
       default:
         return '👤';
-    }
-  }
-
-  Color _getRoleColor() {
-    switch (widget.userRole.toLowerCase()) {
-      case 'student':
-        return const Color(0xFF4CAF50);
-      case 'driver':
-        return const Color(0xFF2196F3);
-      case 'staff':
-        return const Color(0xFF9C27B0);
-      case 'worker':
-        return const Color(0xFFFF9800);
-      case 'people':
-        return const Color(0xFF00BCD4);
-      case 'admin':
-        return const Color(0xFFF44336);
-      default:
-        return const Color(0xFF8B6F47);
     }
   }
 
@@ -251,29 +270,18 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFAFAFA),
       appBar: AppBar(
-        title: Text('${_getRoleEmoji()} ${widget.userRole} Profile'),
-        backgroundColor: _getRoleColor(),
+        backgroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Center(
-              child: ElevatedButton.icon(
-                onPressed: () => _handleLogout(context),
-                icon: const Icon(Icons.logout, size: 20),
-                label: const Text('Logout'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: _getRoleColor(),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
+        title: Text(
+          'Profile',
+          style: TextStyle(
+            color: const Color(0xFF18181B),
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
-        ],
+        ),
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _userDataFuture,
@@ -289,7 +297,7 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const Icon(Icons.error_outline, size: 64, color: Color(0xFFEF4444)),
                   const SizedBox(height: 16),
                   Text(
                     'Error: ${snapshot.error}',
@@ -301,7 +309,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     onPressed: () => setState(() {
                       _userDataFuture = _fetchUserData();
                     }),
-                    child: const Text('Retry'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF18181B),
+                    ),
+                    child: const Text('Retry', style: TextStyle(color: Colors.white)),
                   ),
                 ],
               ),
@@ -318,441 +329,459 @@ class _ProfilePageState extends State<ProfilePage> {
           final completion = _checkProfileCompletion(userData);
           final percentage = _getCompletionPercentage(completion);
           final isComplete = percentage == 100;
+          final displayName = widget.userName ?? '${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}'.trim();
+          final displayEmail = widget.userEmail ?? userData['email'] ?? 'N/A';
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Profile Completion Status
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isComplete
-                        ? [const Color(0xFF4CAF50).withOpacity(0.1), const Color(0xFF4CAF50).withOpacity(0.05)]
-                        : [const Color(0xFFFFC107).withOpacity(0.1), const Color(0xFFFFC107).withOpacity(0.05)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isComplete ? const Color(0xFF4CAF50) : const Color(0xFFFFC107),
-                    width: 2,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Profile Completion',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: isComplete ? const Color(0xFF4CAF50) : const Color(0xFFFFC107),
-                          ),
-                        ),
-                        Text(
-                          '${percentage.toStringAsFixed(0)}%',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: isComplete ? const Color(0xFF4CAF50) : const Color(0xFFFFC107),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        value: percentage / 100,
-                        minHeight: 12,
-                        backgroundColor: Colors.grey[300],
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          isComplete ? const Color(0xFF4CAF50) : const Color(0xFFFFC107),
-                        ),
-                      ),
-                    ),
-                    if (!isComplete) ...[
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            size: 16,
-                            color: const Color(0xFFFFC107),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Complete your profile to get full access',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Complete Profile Button (if not complete)
-              if (!isComplete)
-                ElevatedButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _isEditMode = true;
-                    });
-                    // Scroll to incomplete section
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('👇 Scroll down to complete your profile fields'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFC107),
-                    foregroundColor: Colors.black87,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  icon: const Icon(Icons.edit),
-                  label: const Text(
-                    'Complete Profile to Unlock',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 20),
-
-              // Profile Header
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Container(
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                // Profile Header Card
+                Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        _getRoleColor(),
-                        _getRoleColor().withOpacity(0.8),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE4E4E7)),
                   ),
                   child: Column(
                     children: [
-                      Text(
-                        _getRoleEmoji(),
-                        style: const TextStyle(fontSize: 64),
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF18181B),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(
+                          Icons.person,
+                          size: 40,
+                          color: Colors.white,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        '${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                        displayName.isNotEmpty ? displayName : 'User',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF18181B),
                         ),
-                        textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(20),
+                          color: const Color(0xFFFAFAFA),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFE4E4E7)),
                         ),
                         child: Text(
-                          widget.userRole,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                          widget.userRole.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF18181B),
+                            letterSpacing: 0.5,
                           ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        displayEmail,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: const Color(0xFF71717A),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
 
-              // Personal Information
-              _buildSectionTitle('Personal Information'),
-              _buildProfileField('Email', userData['email'] ?? 'N/A'),
-              _buildProfileField('First Name', userData['firstName'] ?? 'N/A'),
-              _buildProfileField(
-                'Last Name',
-                userData['lastName'] ?? 'N/A',
-              ),
-              _buildProfileField('Age', userData['age']?.toString() ?? 'N/A'),
-              _buildProfileField(
-                'Date of Birth',
-                _formatDate(userData['dob']),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
-              // Academic Information (Only for Students)
-              if (widget.userRole.toLowerCase() == 'student') ...[
-                _buildSectionTitle('Academic Information'),
-                if (!_isEditMode) ...[
-                  if ((userData['year'] ?? '').isNotEmpty)
-                    _buildProfileField('Academic Year', userData['year']),
-                  if ((userData['department'] ?? '').isNotEmpty)
-                    _buildProfileField('Course / Department', userData['department']),
-                  if ((userData['year'] ?? '').isEmpty || (userData['department'] ?? '').isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFC107).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xFFFFC107),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            color: const Color(0xFFFFC107),
-                            size: 18,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Please update your academic details',
+                // Profile Completion Status (Only for incomplete profiles)
+                if (!isComplete)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFC107).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFFC107), width: 1.5),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Profile Completion',
                               style: TextStyle(
-                                color: Colors.grey[700],
-                                fontSize: 12,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFFFFC107),
                               ),
                             ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () => setState(() => _isEditMode = true),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFFC107),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            Text(
+                              '${percentage.toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFFFFC107),
+                              ),
                             ),
-                            child: const Text(
-                              'Update',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ] else ...[
-                  // Edit Mode - Academic Year
-                  Text(
-                    'Academic Year',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: _getRoleColor(),
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _academicYearController,
-                    decoration: InputDecoration(
-                      hintText: 'Enter academic year',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Edit Mode - Department
-                  Text(
-                    'Course / Department',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: _getRoleColor(),
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _departmentController,
-                    decoration: InputDecoration(
-                      hintText: 'Enter course/department',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Home Location (for notification purposes)
-                  Text(
-                    'Home Location (for Bus Notifications)',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: _getRoleColor(),
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _homeLocationController,
-                    decoration: InputDecoration(
-                      hintText: 'e.g., Urapakkam, Chengalpattu',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      helperText: 'Where you board the bus',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Save and Cancel Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _updateProfileFields,
-                          icon: const Icon(Icons.check),
-                          label: const Text('Save Changes'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4CAF50),
-                            foregroundColor: Colors.white,
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: LinearProgressIndicator(
+                            value: percentage / 100,
+                            minHeight: 8,
+                            backgroundColor: const Color(0xFFFFC107).withOpacity(0.2),
+                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFC107)),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => setState(() => _isEditMode = false),
-                          icon: const Icon(Icons.close),
-                          label: const Text('Cancel'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[400],
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+
+                if (!isComplete) const SizedBox(height: 20),
+
+                // Account Section
+                _buildSection(
+                  title: 'Account',
+                  items: [
+                    _buildMenuItem(
+                      icon: Icons.person_outline,
+                      title: 'Edit Profile',
+                      onTap: () {
+                        setState(() {
+                          _isEditMode = true;
+                        });
+                      },
+                    ),
+                    _buildMenuItem(
+                      icon: Icons.notifications_outlined,
+                      title: 'Notifications',
+                      onTap: () {},
+                    ),
+                    _buildMenuItem(
+                      icon: Icons.security_outlined,
+                      title: 'Privacy & Security',
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Student-specific section (if in edit mode)
+                if (widget.userRole.toLowerCase() == 'student' && _isEditMode) ...[
+                  _buildEditSection(userData),
+                  const SizedBox(height: 20),
                 ],
-                const SizedBox(height: 16),
+
+                // Support Section
+                _buildSection(
+                  title: 'Support',
+                  items: [
+                    _buildMenuItem(
+                      icon: Icons.help_outline,
+                      title: 'Help Center',
+                      onTap: () {},
+                    ),
+                    _buildMenuItem(
+                      icon: Icons.info_outline,
+                      title: 'About',
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Logout Button
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE4E4E7)),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => _handleLogout(context),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEE2E2),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.logout,
+                                color: const Color(0xFFDC2626),
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                'Logout',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFFDC2626),
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                              color: const Color(0xFFDC2626),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
               ],
-
-              // Address Information
-              _buildSectionTitle('Address Information'),
-              _buildProfileField('Address', userData['address'] ?? 'N/A'),
-              const SizedBox(height: 16),
-
-              // Account Information
-              _buildSectionTitle('Account Information'),
-              _buildProfileField(
-                'Created On',
-                _formatDate(userData['createdAt']),
-              ),
-              _buildProfileField(
-                'Last Updated',
-                _formatDate(userData['updatedAt']),
-              ),
-            ],
+            ),
           );
         },
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12, top: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: _getRoleColor().withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: _getRoleColor().withOpacity(0.3),
-            width: 1,
+  Widget _buildSection({
+    required String title,
+    required List<Widget> items,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF71717A),
+            ),
           ),
         ),
-        child: Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: _getRoleColor(),
-            letterSpacing: 0.5,
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE4E4E7)),
+          ),
+          child: Column(
+            children: List.generate(
+              items.length,
+              (index) => Column(
+                children: [
+                  items[index],
+                  if (index < items.length - 1)
+                    Divider(color: const Color(0xFFE4E4E7), height: 1),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFAFAFA),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  color: const Color(0xFF18181B),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF18181B),
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: const Color(0xFF71717A),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildProfileField(String label, String value) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
+  Widget _buildEditSection(Map<String, dynamic> userData) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE4E4E7)),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            colors: [
-              Colors.white,
-              Colors.grey[50]!,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Academic Information',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF18181B),
+            ),
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: _getRoleColor(),
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
-              ),
+          const SizedBox(height: 16),
+
+          // Academic Year
+          Text(
+            'Academic Year',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF71717A),
             ),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF333333),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _academicYearController,
+            decoration: InputDecoration(
+              hintText: 'e.g., 2024',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFE4E4E7)),
               ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+
+          // Department
+          Text(
+            'Course / Department',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF71717A),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _departmentController,
+            decoration: InputDecoration(
+              hintText: 'Enter course/department',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFE4E4E7)),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Home Location
+          Text(
+            'Home Location (for Bus Notifications)',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF71717A),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _homeLocationController,
+            decoration: InputDecoration(
+              hintText: 'e.g., Urapakkam, Chengalpattu',
+              helperText: 'Where you board the bus',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFE4E4E7)),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Save and Cancel Buttons
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _updateProfileFields,
+                  icon: const Icon(Icons.check),
+                  label: const Text('Save Changes'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF16A34A),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => setState(() => _isEditMode = false),
+                  icon: const Icon(Icons.close),
+                  label: const Text('Cancel'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE4E4E7),
+                    foregroundColor: const Color(0xFF18181B),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
+
 }

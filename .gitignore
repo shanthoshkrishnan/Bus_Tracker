@@ -53,10 +53,12 @@ app.*.map.json
 .env.production.local
 .env.*.secret
 
-# Firebase
+# Firebase & Google Cloud credentials (SENSITIVE - Do NOT commit)
 google-services.json
 GoogleService-Info.plist
 .firebaserc
+firebase-key.json
+service-account-key.json
 
 # IDE
 .vscode/
@@ -77,6 +79,8 @@ pubspec.lock
 
 # Generated files
 lib/generated/
+lib/generated_bindings/
+*.g.dart
 
 # Coverage
 coverage/
@@ -90,14 +94,35 @@ debug_logs/
 *.tmp
 *.temp
 *.bak
+*.swp
+*.swo
+
+# Logs
+firebase-debug.log
+firebase-debug.*.log
 
 # Never commit these
 private_keys/
 secrets/
 credentials/
+service-account-key.json
+*.key
+*.pem
+
+# Firebase-sensitive files
+.firebaserc
+.env
+.env.local
+.env.*.local
+
+# Node modules & dependencies
+node_modules/
+package-lock.json
+*.lock
 
 # Pub
 .packages
+.pubspec.lock
 
 # Android specific
 android/local.properties

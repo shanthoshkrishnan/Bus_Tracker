@@ -1,158 +1,298 @@
-# 🚌 Panimalar Smart Bus Management System
+# 🚌 LO BUS - Smart Bus Management System
 
-A comprehensive Flutter-based real-time bus tracking and management solution that enables students to track buses, receive notifications, and helps administrators manage the entire fleet efficiently.
+[![Flutter](https://img.shields.io/badge/Flutter-3.8.1-02569B?logo=flutter)](https://flutter.dev)
+[![Firebase](https://img.shields.io/badge/Firebase-Latest-FFCA28?logo=firebase)](https://firebase.google.com)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**Status**: Production Ready  
-**Platform**: Flutter (iOS, Android, Windows, Linux, macOS)  
-**Backend**: Firebase Firestore + Authentication + Cloud Messaging  
-**Version**: 1.0.0
+A comprehensive real-time bus tracking and management solution built with Flutter and Firebase, enabling students to track buses, drivers to manage routes, and administrators to oversee the entire fleet.
 
 ---
 
 ## 📋 Table of Contents
 
-- [Project Overview](#project-overview)
 - [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Running the App](#running-the-app)
 - [Project Structure](#project-structure)
-- [Setup & Configuration](#setup--configuration)
-- [Usage Guide](#usage-guide)
-- [Technologies](#technologies)
-- [Hackathon Info](#hackathon-info)
-
----
-
-## 🎯 Project Overview
-
-The **Panimalar Smart Bus Management System** is a real-time bus tracking solution that enables:
-
-- **Students**: Track buses in real-time, receive notifications when buses arrive
-- **Drivers**: Update bus location, complete routes, manage schedules
-- **Admins**: Manage buses, routes, drivers, and view analytics
-- **College Staff**: Monitor system usage and generate reports
-
-### Key Problem Solved
-
-Students often miss buses due to lack of real-time information. This system provides:
-- ✅ Real-time bus location tracking
-- ✅ Automatic notifications (bus approaching, arrived)
-- ✅ Estimated arrival times (ETA)
-- ✅ Route and schedule management
-- ✅ Driver and student verification
+- [Firebase Setup](#firebase-setup)
+- [Google Maps Setup](#google-maps-setup)
+- [User Roles & Permissions](#user-roles--permissions)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
 
 ---
 
 ## ✨ Features
 
-### 1. 🎓 Student Features
-- ✅ Real-time bus tracking on map
-- ✅ Receive notifications when bus is near
-- ✅ View bus schedule and route
-- ✅ See driver information
-- ✅ Mark attendance automatically
-- ✅ View nearby buses (5 km radius)
-- ✅ Complete and update profile
+### For Students 🎓
+- 📍 **Real-time Bus Tracking** - Track your assigned bus on interactive Google Maps with live GPS updates
+- 🔔 **Smart Notifications** - Get notified when your bus is approaching your stop
+- 🗺️ **Route Visualization** - View complete bus routes with all stops and timings
+- 👤 **Profile Management** - Manage your personal details, home location, and bus assignments
+- 🔍 **Search Functionality** - Quickly find buses, routes, and driver information
+- 📊 **Bus Status** - Real-time bus capacity, delays, and estimated arrival times (ETA)
 
-### 2. 🚕 Driver Features
-- ✅ Real-time GPS location sharing
-- ✅ Route navigation with waypoints
-- ✅ Student pickup verification
-- ✅ Delay tracking and reporting
-- ✅ Navigation assistance
-- ✅ Attendance management
+### For Drivers 🚗
+- 📲 **Automatic Location Broadcasting** - Your GPS location updates every 5-10 seconds automatically
+- 👥 **Passenger Management** - View list of assigned students and their boarding/drop-off points
+- 🗓️ **Route Details** - Access complete route information with all stops and timings
+- 🔄 **Status Updates** - Update bus status (departed, in-transit, arrived, delayed) with one tap
+- 📞 **Quick Contact** - Direct access to admin and student contact information
 
-### 3. 👨‍💼 Admin Features
-- ✅ Manage buses and routes
-- ✅ Assign drivers to buses
-- ✅ Create and modify schedules
-- ✅ View real-time fleet tracking
-- ✅ Generate analytics and reports
-- ✅ Manage student and driver data
-- ✅ View system logs and errors
+### For Administrators 👨‍💼
+- 🚌 **Bus Fleet Management** - Add, edit, remove buses; manage capacity and maintenance schedules
+- 👨‍✈️ **Driver Management** - Manage driver profiles, assignments, and performance tracking
+- 🗺️ **Route Management** - Create and update routes with GPS coordinates and estimated timings
+- 👨‍🎓 **Student Assignments** - Assign students to specific buses and routes efficiently
+- 📊 **Analytics Dashboard** - Monitor fleet performance, usage statistics, and system health
+- 🔐 **Access Control** - Role-based permissions and comprehensive security management
 
-### 4. 🔔 Notification System
-- ✅ Push notifications for bus arrival
-- ✅ SMS alerts (optional)
-- ✅ In-app notification center
-- ✅ Customizable notification preferences
+---
 
-### 5. 🗺️ Map & Tracking
-- ✅ Real-time bus location on map
-- ✅ Route visualization with waypoints
-- ✅ Distance calculation
-- ✅ ETA calculation
-- ✅ Support for multiple buses
-- ✅ Vehicle icon display
+## 🛠 Tech Stack
 
-### 6. 🔐 Security & Authentication
-- ✅ Email/Password authentication
-- ✅ Role-based access control
-- ✅ Admin custom claims
-- ✅ Firestore security rules
-- ✅ Encrypted credential storage
+| Category | Technologies |
+|----------|-------------|
+| **Framework** | Flutter 3.8.1+ (Dart 3.0+) |
+| **UI** | Material Design 3, Custom widgets |
+| **Authentication** | Firebase Authentication (Email/Password) |
+| **Database** | Cloud Firestore (User data, buses, drivers)<br/>Firebase Realtime Database (Live location tracking) |
+| **Notifications** | Firebase Cloud Messaging (FCM) |
+| **Maps** | Google Maps Flutter, Geolocator |
+| **State Management** | Provider pattern (Built-in) |
+| **Backend Functions** | Firebase Cloud Functions (Node.js) |
 
-### 7. 📊 Analytics & Reporting
-- ✅ Daily bus statistics
-- ✅ Student attendance reports
-- ✅ Route performance metrics
-- ✅ Driver performance tracking
-- ✅ System health monitoring
+---
+
+## 📋 Prerequisites
+
+Before starting, ensure you have:
+
+1. **Flutter SDK** (3.8.1 or higher)
+   ```bash
+   flutter --version
+   ```
+   Download: https://flutter.dev/docs/get-started/install
+
+2. **Android Studio** or **VS Code** with Flutter extensions
+
+3. **Firebase CLI** (for deployment)
+   ```bash
+   npm install -g firebase-tools
+   ```
+
+4. **Google Cloud Account** (for Google Maps API - free tier available)
+
+5. **Firebase Project** (free Spark plan works for development)
+
+6. **Node.js** 14+ (for Firebase Functions)
+
+7. **Git** for version control
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
+Get the app running in 5 minutes:
 
-- **Flutter**: 3.0 or higher
-- **Dart**: 3.0 or higher
-- **Firebase Account**: For Firestore, Auth, and Cloud Functions
-- **Git**: For version control
-- **Android Studio or Xcode**: For mobile development
+```bash
+# 1. Clone the repository
+git clone https://github.com/yourusername/bus_tracker.git
+cd bus_tracker
 
-### Installation
+# 2. Install dependencies
+flutter pub get
 
-#### 1. Clone the Repository
+# 3. Create .env file (see Configuration section)
+echo "GOOGLE_MAPS_API_KEY=your_api_key_here" > .env
+
+# 4. Run on connected device or emulator
+flutter run
+```
+
+**First-time setup?** Continue reading for detailed configuration.
+
+---
+
+## 🔧 Installation
+
+### Step 1: Clone Repository
 
 ```bash
 git clone https://github.com/yourusername/bus_tracker.git
 cd bus_tracker
 ```
 
-#### 2. Install Dependencies
+### Step 2: Install Flutter Dependencies
 
 ```bash
 flutter pub get
 ```
 
-#### 3. Setup Firebase Configuration
+This installs all required packages from `pubspec.yaml`:
+- `firebase_core` (^3.15.2) - Firebase initialization
+- `firebase_auth` (^5.3.2) - User authentication
+- `cloud_firestore` (^5.6.0) - Database for user/bus data
+- `firebase_database` (^11.3.10) - Real-time location tracking
+- `google_maps_flutter` (^2.5.0) - Map integration
+- `geolocator` (^11.0.0) - GPS location services
+- `intl` (^0.20.0) - Date/time formatting
+- `flutter_dotenv` - Environment variable management
+
+### Step 3: Verify Setup
 
 ```bash
-# Copy the environment template
-cp .env.example .env
-
-# Edit .env with your Firebase credentials
-nano .env  # or use your preferred editor
+flutter doctor
 ```
 
-**Where to get Firebase credentials:**
-1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your project
-3. Project Settings → Your apps
-4. Copy credentials for each platform (Android, iOS, etc.)
-5. Paste them in `.env` file
+Ensure all checks pass (✓). Fix any issues before proceeding:
+- ✓ Flutter installed
+- ✓ Android toolchain / Xcode (for iOS)
+- ✓ Connected device or emulator
+- ✓ VS Code or Android Studio with Flutter plugin
 
-#### 4. Run the Application
+---
+
+## ⚙️ Configuration
+
+### 1. Environment Variables
+
+Create `.env` file in project root:
+
+```env
+# Google Maps API Key (required)
+GOOGLE_MAPS_API_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+# Firebase Project ID (optional - already in firebase_options.dart)
+FIREBASE_PROJECT_ID=bus-tracker-af190
+```
+
+**Important:** The `.env` file is already in `.gitignore` - never commit it to version control!
+
+### 2. Android Configuration
+
+**Edit `android/app/src/main/AndroidManifest.xml`:**
+
+```xml
+<manifest>
+    <application>
+        <!-- Add Google Maps API Key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="YOUR_GOOGLE_MAPS_API_KEY"/>
+        
+        <!-- Rest of application config -->
+    </application>
+    
+    <!-- Add these permissions -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>
+```
+
+### 3. iOS Configuration (if building for iOS)
+
+**Edit `ios/Runner/AppDelegate.swift`:**
+
+```swift
+import UIKit
+import Flutter
+import GoogleMaps
+
+@UIApplicationMain
+@objc class AppDelegate: FlutterAppDelegate {
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -> Bool {
+    GMSServices.provideAPIKey("YOUR_GOOGLE_MAPS_API_KEY")
+    GeneratedPluginRegistrant.register(with: self)
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+}
+```
+
+**Edit `ios/Runner/Info.plist`:**
+
+```xml
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>We need your location to show nearby buses</string>
+<key>NSLocationAlwaysUsageDescription</key>
+<string>We need background location for real-time tracking</string>
+```
+
+### 4. Windows Developer Mode (Windows only)
+
+Flutter requires Developer Mode on Windows for symlink support:
+
+```powershell
+# Open Developer Settings
+start ms-settings:developers
+```
+
+Toggle on **"Developer Mode"** → Click "Yes" on confirmation dialog.
+
+---
+
+## 🏃 Running the App
+
+### Run on Emulator/Device
 
 ```bash
-# Development mode (with hot reload)
+# List all connected devices
+flutter devices
+
+# Run on default device
 flutter run
 
-# Release mode
-flutter run --release
-
-# Specific device
+# Run on specific device
 flutter run -d <device_id>
+
+# Run with hot reload (development)
+flutter run --debug
+
+# Run in release mode (production)
+flutter run --release
+```
+
+### Platform-Specific Commands
+
+```bash
+# Android
+flutter run -d android
+
+# iOS (Mac only)
+flutter run -d ios
+
+# Chrome (web)
+flutter run -d chrome
+
+# Windows
+flutter run -d windows
+```
+
+### Build Release Binaries
+
+```bash
+# Android APK
+flutter build apk --release
+# Output: build/app/outputs/flutter-apk/app-release.apk
+
+# Android App Bundle (for Play Store)
+flutter build appbundle --release
+# Output: build/app/outputs/bundle/release/app-release.aab
+
+# iOS (Mac only)
+flutter build ios --release
+# Then open ios/Runner.xcworkspace in Xcode
+
+# Windows
+flutter build windows --release
 ```
 
 ---
@@ -162,397 +302,460 @@ flutter run -d <device_id>
 ```
 bus_tracker/
 ├── lib/
-│   ├── main.dart                 # App entry point
 │   ├── config/
-│   │   └── env_config.dart       # Environment configuration
-│   ├── models/
-│   │   ├── bus_model.dart
-│   │   ├── route_model.dart
-│   │   ├── driver_model.dart
-│   │   └── student_model.dart
-│   ├── pages/
-│   │   ├── auth/
-│   │   │   ├── login_page.dart
-│   │   │   └── register_page.dart
-│   │   ├── home_page.dart
-│   │   ├── profile_page.dart
-│   │   ├── admin_page.dart
-│   │   ├── bus_management_page.dart
-│   │   ├── driver_page.dart
-│   │   └── map_page.dart
-│   ├── services/
-│   │   ├── firebase_service.dart
-│   │   ├── location_service.dart
-│   │   ├── notification_service.dart
-│   │   └── auth_service.dart
-│   ├── widgets/
-│   │   ├── bus_card.dart
-│   │   ├── notification_card.dart
-│   │   └── profile_header.dart
-│   └── firebase_options.dart
-├── android/
-│   ├── app/
-│   │   ├── google-services.json   # Google Play services (from Firebase)
-│   │   └── src/
-│   └── build.gradle
-├── ios/
-│   ├── Runner/
-│   │   └── GoogleService-Info.plist  # Firebase config for iOS
-│   └── Podfile
-├── test/
-│   └── widget_test.dart
-├── pubspec.yaml                  # Dependencies
-├── pubspec.lock                  # Locked dependency versions
-├── .env.example                  # Environment template (MUST COPY TO .env)
-├── .env                          # Environment variables (DO NOT COMMIT)
-├── .gitignore                    # Git ignore rules
-├── README.md                     # This file
-└── HACKATHON_PROGRESS.md         # Hackathon progress tracking
+│   │   └── env_config.dart           # Environment configuration
+│   │
+│   ├── models/                        # Data models
+│   │   ├── bus_model.dart             # Bus entity model
+│   │   └── location_model.dart        # Location tracking models
+│   │       ├── BusLocation            # Real-time bus location
+│   │       ├── DriverLocation         # Driver GPS tracking
+│   │       ├── BusRoute               # Route with stops
+│   │       ├── StudentBusAssignment   # Student-bus mapping
+│   │       └── RouteTable             # Route management
+│   │
+│   ├── services/                      # Business logic layer
+│   │   ├── firebase_service.dart      # Firebase CRUD operations
+│   │   ├── location_service.dart      # GPS & location handling
+│   │   ├── location_tracking_service.dart  # Real-time tracking
+│   │   ├── driver_sync_service.dart   # Driver data synchronization
+│   │   └── bus_setup_service.dart     # Bus initialization
+│   │
+│   ├── pages/                         # UI screens
+│   │   ├── login_page.dart            # User authentication
+│   │   ├── register_page.dart         # New user registration
+│   │   ├── forgot_password_page.dart  # Password reset
+│   │   ├── home_page.dart             # Main bus tracking map
+│   │   ├── student_page.dart          # Student dashboard
+│   │   ├── driver_page.dart           # Driver control panel
+│   │   ├── admin_page.dart            # Admin dashboard
+│   │   ├── profile_page.dart          # User profile management
+│   │   ├── bus_management_page.dart   # Bus CRUD operations
+│   │   ├── driver_management_page.dart # Driver management
+│   │   ├── route_management_page.dart # Route creation/editing
+│   │   └── bus_seat_selection_page.dart # Seat booking
+│   │
+│   ├── widgets/                       # Reusable components
+│   │   ├── bus_card.dart              # Bus list item widget
+│   │   └── bus_details_popup.dart     # Bus info modal
+│   │
+│   ├── firebase_options.dart          # Auto-generated Firebase config
+│   └── main.dart                      # App entry point
+│
+├── functions/                         # Firebase Cloud Functions
+│   ├── index.js                       # Functions entry point
+│   └── sync-drivers.js                # Driver sync function
+│
+├── android/                           # Android-specific files
+├── ios/                               # iOS-specific files
+├── windows/                           # Windows-specific files
+├── linux/                             # Linux-specific files
+├── macos/                             # macOS-specific files
+├── web/                               # Web-specific files
+│
+├── assets/                            # Static resources
+│   └── images/                        # Image files
+│
+├── .env                               # Environment variables (create this)
+├── .gitignore                         # Git ignore rules
+├── firebase.json                      # Firebase config
+├── firestore.rules                    # Firestore security rules
+├── firestore.indexes.json             # Firestore indexes
+├── pubspec.yaml                       # Flutter dependencies
+├── README.md                          # This file
+├── README_FRONTEND.md                 # Frontend documentation
+└── README_BACKEND.md                  # Backend documentation
 ```
 
 ---
 
-## ⚙️ Setup & Configuration
+## 🔥 Firebase Setup
 
-### Firebase Setup
+### 1. Create Firebase Project
 
-#### 1. Create Firebase Project
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Click **"Create a project"**
+3. Enter project name: `bus-tracker` (or your choice)
+4. Disable Google Analytics (optional for development)
+5. Click **"Create project"**
 
-```
-1. Go to https://console.firebase.google.com
-2. Click "Create Project"
-3. Enter project name: "bus-tracker"
-4. Enable Google Analytics (optional)
-5. Create project
-```
+### 2. Register Android App
 
-#### 2. Enable Required Services
+1. In Firebase project, click **"Add app"** → **Android** icon
+2. Enter Android package name: `com.example.bus_tracker`
+   - Find in `android/app/build.gradle` → `applicationId`
+3. Click **"Register app"**
+4. Download `google-services.json`
+5. Place file in `android/app/google-services.json`
+6. Click **"Next"** → **"Continue to console"**
 
-```
-Firebase Console → Your Project → Project Settings → Enabled APIs:
-✓ Cloud Firestore
-✓ Firebase Authentication
-✓ Cloud Storage
-✓ Cloud Functions
-✓ Cloud Messaging (FCM)
-```
+### 3. Register iOS App (Optional)
 
-#### 3. Create Firestore Database
+1. Click **"Add app"** → **iOS** icon
+2. Enter iOS bundle ID from `ios/Runner/Info.plist`
+3. Download `GoogleService-Info.plist`
+4. Place in `ios/Runner/GoogleService-Info.plist`
 
-```
-Firestore Database → Create Database
-- Location: Nearest to college (Mumbai or Singapore region)
-- Start in Production mode
-- Update rules (see FIRESTORE_PERMISSION_FIX_QUICK.md)
-```
+### 4. Enable Firebase Authentication
 
-#### 4. Enable Authentication
+1. In Firebase Console, go to **Authentication**
+2. Click **"Get started"**
+3. Go to **"Sign-in method"** tab
+4. Enable **"Email/Password"** provider
+5. Click **"Save"**
 
-```
-Authentication → Sign-in method:
-✓ Email/Password (enable)
-✓ Anonymous (enable for demo)
-```
+### 5. Create Firestore Database
 
-#### 5. Configure Firestore Rules
+1. Go to **Firestore Database** in left sidebar
+2. Click **"Create database"**
+3. Select **"Start in production mode"** (we'll add rules next)
+4. Choose database location (closest to your users)
+5. Click **"Enable"**
 
-See [FIRESTORE_PERMISSION_FIX_QUICK.md](FIRESTORE_PERMISSION_FIX_QUICK.md) for complete rules.
-
-#### 6. Setup Admin Custom Claims
+**Deploy Security Rules:**
 
 ```bash
-# Option 1: Firebase Console
-1. Go to Authentication → Users
-2. Click on user email
-3. Set Custom Claims:
-   {
-     "admin": true
-   }
+# Install Firebase CLI
+npm install -g firebase-tools
 
-# Option 2: Firebase CLI
-firebase functions:config:set customclaims.admin=true
+# Login
+firebase login
+
+# Initialize Firebase in project (if not already done)
+firebase init
+
+# Deploy Firestore rules
+firebase deploy --only firestore:rules
 ```
 
-### Environment Variables
+### 6. Create Realtime Database
 
-Create a `.env` file in the root directory:
+1. Go to **Realtime Database** in left sidebar
+2. Click **"Create Database"**
+3. Select **"Start in locked mode"**
+4. Choose database location
+5. Click **"Enable"**
 
-```env
-# Firebase Android
-FIREBASE_ANDROID_API_KEY=YOUR_KEY_HERE
-FIREBASE_ANDROID_APP_ID=1:818518045990:android:8cf94322a372283fdabde7
-FIREBASE_MESSAGING_SENDER_ID=YOUR_ID_HERE
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
+**Database Rules:** See [README_BACKEND.md](README_BACKEND.md) for detailed rules.
 
-# Firebase iOS
-FIREBASE_IOS_API_KEY=YOUR_KEY_HERE
-FIREBASE_IOS_APP_ID=YOUR_APP_ID
-FIREBASE_IOS_BUNDLE_ID=com.example.busTracker
+### 7. Set Admin User (Important!)
 
-# Demo Settings
-DEMO_BUS_NUMBER=154
-DEMO_STUDENT_EMAIL=student@example.com
-DEMO_ADMIN_EMAIL=admin@example.com
-
-# App Settings
-APP_NAME=Bus Tracker
-ENVIRONMENT=development
-```
-
-**⚠️ IMPORTANT**: Never commit `.env` file to GitHub. It's included in `.gitignore`.
-
----
-
-## 📱 Usage Guide
-
-### Create Test Users
-
-#### Admin User
-
-```
-Email: admin@example.com
-Password: admin@123
-Role: admin
-```
-
-**Then set admin claims:**
-1. Firebase Console → Authentication → Users
-2. Find "admin@example.com"
-3. Click Custom Claims (JSON)
-4. Add: `{"admin": true}`
-
-#### Student User
-
-```
-Email: student@example.com
-Password: student@123
-Role: student
-Home Location: Urapakkam
-```
-
-#### Driver User
-
-```
-Email: driver@example.com
-Password: driver@123
-Role: driver
-```
-
-### Demo Data
-
-#### Create Demo Routes
-
-1. Login as admin
-2. Go to "Bus Management" (Assign button)
-3. Click "Routes" button
-4. Routes created:
-   - Evening: Panimalar (3:07 PM) → Chengalpattu
-   - Morning: Chengalpattu (7:00 AM) → Panimalar
-
-#### Create Demo Buses
-
-1. Still in Admin page
-2. Click "Demo Data" button
-3. Buses created:
-   - Bus #125 (Vehicle: TN01AB1234) - Live bus
-   - Bus #123, #154, #115 (Demo collection)
-
-#### Setup Demo Notification
-
-1. Create notification in Firestore:
+After registering your first user, set admin privileges:
 
 ```javascript
-db.collection("notifications").add({
-  userId: "student_user_id",
-  busNumber: "154",
-  message: "Bus #154 is approaching. 2.5 km away",
-  type: "bus_approaching",
-  read: false,
-  createdAt: new Date()
+// In set-admin-claim.js (already in project root)
+const admin = require('firebase-admin');
+const serviceAccount = require('./service-account-key.json');
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
 });
+
+const uid = 'YOUR_USER_UID_HERE'; // Get from Firebase Console → Authentication
+admin.auth().setCustomUserClaims(uid, { admin: true })
+  .then(() => {
+    console.log('✅ Admin claim set successfully');
+  });
 ```
 
-2. Login as student
-3. Go to home page
-4. Scroll to "🔔 Bus Notifications"
-5. See notification card with Bus #154 info
+Run it:
+```bash
+node set-admin-claim.js
+```
 
 ---
 
-## 💻 Technologies
+## 🗺 Google Maps Setup
 
-### Frontend
-- **Flutter** 3.0+ - Cross-platform mobile framework
-- **Dart** 3.0+ - Programming language
-- **flutter_map** - Map visualization
-- **cloud_firestore** - Real-time database
-- **firebase_auth** - Authentication
-- **geolocator** - Location services
-- **flutter_dotenv** - Environment variables
+### 1. Create Google Cloud Project
 
-### Backend
-- **Firebase Firestore** - Real-time NoSQL database
-- **Firebase Authentication** - User auth & custom claims
-- **Firebase Cloud Functions** - Serverless backend
-- **Google Cloud Storage** - File storage
-- **Firebase Cloud Messaging** - Push notifications
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Click project dropdown → **"New Project"**
+3. Enter project name: `bus-tracker-maps`
+4. Click **"Create"**
 
-### APIs
-- **Google Maps API** - Map services, routing
-- **Haversine Formula** - Distance calculation
-- **Geofencing** - Location-based triggers
+### 2. Enable Required APIs
+
+In Google Cloud Console, enable these APIs:
+
+1. **Maps SDK for Android** (required)
+2. **Maps SDK for iOS** (if building for iOS)
+3. **Maps JavaScript API** (optional for web)
+4. **Places API** (optional for location search)
+5. **Geolocation API** (optional)
+
+**How to enable:**
+- Use search bar at top
+- Search for API name (e.g., "Maps SDK for Android")
+- Click on API → Click **"Enable"**
+
+### 3. Create API Key
+
+1. Go to **Credentials** (left sidebar)
+2. Click **"+ CREATE CREDENTIALS"**
+3. Select **"API Key"**
+4. Copy the generated key (starts with `AIzaSy...`)
+5. Click **"Restrict Key"** (recommended for security)
+
+**Restrict the API Key:**
+
+**For Android:**
+- Application restrictions → **"Android apps"**
+- Add package name: `com.example.bus_tracker`
+- Add SHA-1 certificate fingerprint (optional but recommended)
+
+**Get SHA-1 fingerprint:**
+```bash
+cd android
+./gradlew signingReport
+# Copy SHA-1 from debug variant
+```
+
+**For iOS:**
+- Application restrictions → **"iOS apps"**
+- Add bundle ID from `Info.plist`
+
+**API restrictions:**
+- Select **"Restrict key"**
+- Check only the APIs you enabled (Maps SDK for Android, etc.)
+
+### 4. Configure API Key in App
+
+Update `.env` file:
+```env
+GOOGLE_MAPS_API_KEY=AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+Update `AndroidManifest.xml` (already shown in Configuration section).
 
 ---
 
-## 🏆 Hackathon Info
+## 👥 User Roles & Permissions
 
-### Project Title
-**Panimalar Smart Bus Management System - Real-Time Bus Tracking & Notification System**
+### Student Role 🎓
+- **Permissions:**
+  - View assigned buses on map
+  - Receive push notifications
+  - View profile and update details
+  - View route information
+- **Cannot:**
+  - Update bus locations
+  - Access admin features
+  - Modify driver data
 
-### Problem Statement
-Students at Panimalar Engineering College often miss buses due to lack of real-time location information and automated notifications. The current system relies on manual communication and static schedules.
+### Driver Role 🚗
+- **Permissions:**
+  - Update real-time bus location
+  - Update bus status (departed, in-transit, etc.)
+  - View assigned route and students
+  - Update own profile
+- **Cannot:**
+  - Create/delete buses or routes
+  - Access admin dashboard
+  - Assign students to buses
 
-### Solution
-A comprehensive Flutter mobile application that provides:
-1. Real-time bus location tracking using GPS
-2. Automatic notifications when buses approach/arrive
-3. Route and schedule management
-4. Student attendance verification
-5. Driver and admin management tools
+### Admin Role 👨‍💼
+- **Permissions:**
+  - Full access to all features
+  - Create/edit/delete buses, routes, drivers
+  - Assign students to buses
+  - View all real-time locations
+  - Access analytics dashboard
+- **How to set:**
+  ```bash
+  node set-admin-claim.js USER_UID
+  ```
 
-### Tech Stack
-- **Frontend**: Flutter/Dart (Cross-platform)
-- **Backend**: Firebase (Firestore, Auth, Cloud Functions)
-- **Maps**: Google Maps API with custom bus icons
-- **Notifications**: Firebase Cloud Messaging
-
-### Key Features
-✅ Real-time GPS tracking  
-✅ Automatic notifications  
-✅ Role-based access control  
-✅ Admin management system  
-✅ Analytics & reporting  
-✅ Offline capability  
-
-### Competition Categories
-- Mobile Development
-- IoT/Location Services
-- Education Technology
-- Cloud Infrastructure
+**Default role for new registrations:** Student
 
 ---
 
-## 📞 Support & Documentation
+## 🔒 Security & Privacy
 
-### Important Documents
+### Data Security
+- All sensitive data encrypted in transit (HTTPS/WSS)
+- Firebase Authentication with email verification
+- Firestore security rules enforce role-based access
+- API keys restricted by package name and SHA-1
 
-1. **[HACKATHON_PROGRESS.md](HACKATHON_PROGRESS.md)** - What's done, what's pending
-2. **[FIRESTORE_PERMISSION_FIX_QUICK.md](FIRESTORE_PERMISSION_FIX_QUICK.md)** - Firestore rules
-3. **[ADVANCED_ROUTE_MANAGEMENT.md](ADVANCED_ROUTE_MANAGEMENT.md)** - Route setup
-4. **[VERIFICATION_GUIDE_SESSION_3.md](VERIFICATION_GUIDE_SESSION_3.md)** - Testing guide
+### Privacy
+- Location data only tracked while using app (except for drivers)
+- Users can delete their account and data
+- No third-party data sharing
+- GDPR compliant (with proper implementation)
+
+---
+
+## 🧪 Testing
+
+### Run Tests
+
+```bash
+# Unit tests
+flutter test
+
+# Integration tests
+flutter test integration_test
+
+# Run specific test file
+flutter test test/services/firebase_service_test.dart
+```
+
+### Manual Testing Checklist
+
+- [ ] User registration with valid email
+- [ ] Login with correct credentials
+- [ ] Password reset flow
+- [ ] Profile creation and updates
+- [ ] Bus location updates (as driver)
+- [ ] Real-time map tracking (as student)
+- [ ] Bus assignment functionality (as admin)
+- [ ] Route creation (as admin)
+- [ ] Notifications received
+- [ ] Offline functionality
+- [ ] App doesn't crash on network loss
+
+---
+
+## 🐛 Troubleshooting
 
 ### Common Issues
 
-#### Firebase Permission Denied
+**1. Firebase duplicate app error**
+```
+✅ Fixed in main.dart with Firebase.apps.isEmpty check
+```
 
-**Problem**: `PERMISSION_DENIED: Missing or insufficient permissions`
+**2. Google Maps not showing**
+```
+Solution:
+- Verify API key in AndroidManifest.xml is correct
+- Check Maps SDK for Android is enabled in Google Cloud
+- Check if device has internet connection
+- Verify package name matches in Google Cloud restrictions
+```
 
-**Solution**:
-1. Check Firestore rules are published
-2. Verify user is authenticated
-3. Set admin custom claims if needed
-4. Check collection-specific rules
+**3. Location permission denied**
+```
+Solution:
+- Grant location permissions in device Settings → Apps → Bus Tracker → Permissions
+- For iOS, check Info.plist has location usage descriptions
+- Restart app after granting permissions
+```
 
-#### Location Permission
+**4. Build failed on Windows**
+```
+Solution:
+- Enable Developer Mode: start ms-settings:developers
+- Run: flutter clean && flutter pub get
+- Restart IDE
+```
 
-**Problem**: App doesn't get location
+**5. Firebase not initialized error**
+```
+Solution:
+- Ensure google-services.json is in android/app/
+- Run: flutter clean && flutter pub get
+- Check firebase_options.dart exists
+```
 
-**Solution**:
-1. Grant location permission in app
-2. For Android: Check `AndroidManifest.xml` has location permissions
-3. For iOS: Check `Info.plist` has location usage keys
+**6. "LatLng import conflict" error**
+```
+✅ Already fixed - removed latlong2 package, using google_maps_flutter only
+```
 
-#### Firebase Credentials Not Found
+### Enable Debug Logging
 
-**Problem**: `PlatformException(ERROR_FIREBASE_INIT_FAILED, ...)`
+Add this to `main.dart` for verbose logging:
 
-**Solution**:
-1. Copy `.env.example` to `.env`
-2. Fill in Firebase credentials from console
-3. Run `flutter clean && flutter pub get`
-
-### Getting Help
-
-- Check the documentation files in the repo
-- Review Firebase Console logs
-- Check Flutter console output for errors
-- Search GitHub issues
-
----
-
-## 📈 Performance Metrics
-
-### Target Performance
-- App startup time: < 3 seconds
-- Map rendering: < 500ms
-- Location update interval: 5-10 seconds
-- Notification delivery: < 30 seconds
-- Database query time: < 200ms
-
-### Optimization Techniques
-- Lazy loading of data
-- Image caching
-- Location batching
-- Firestore indexing
-- Flutter performance monitoring
-
----
-
-## 🔒 Security
-
-### Data Protection
-- End-to-end encryption for sensitive data
-- Firestore security rules enforce access control
-- Firebase custom claims for role-based security
-- No sensitive data stored locally
-
-### Authentication
-- Email/Password with Firebase Auth
-- Custom JWT tokens
-- Session management
-- Logout functionality
-
-### API Security
-- REST API with authentication headers
-- Rate limiting for API calls
-- Input validation
-- SQL injection prevention (uses Firestore, not SQL)
+```dart
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Enable detailed logging
+  debugPrint('🚀 App starting...');
+  
+  // ... rest of initialization
+}
+```
 
 ---
 
-## 📝 License
+## 📊 Performance Tips
 
-This project is created for Panimalar Engineering College Hackathon.
-
----
-
-## 👥 Team
-
-- **Project Lead**: [Your Name]
-- **Developers**: [Team Members]
-- **Mentors**: Panimalar Engineering College Faculty
+- Location updates throttled to 5-10 seconds to save battery
+- Map markers update efficiently using StreamBuilder
+- Images cached locally with `cached_network_image`
+- Firestore queries use composite indexes for fast retrieval
+- Realtime Database used for high-frequency location updates (cheaper than Firestore)
 
 ---
 
-## 📞 Contact
+## 🤝 Contributing
 
-- **College**: Panimalar Engineering College
-- **Email**: hackathon@panimalar.ac.in
-- **Website**: www.panimalar.ac.in
+Contributions welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/AmazingFeature`
+3. Commit changes: `git commit -m 'Add AmazingFeature'`
+4. Push to branch: `git push origin feature/AmazingFeature`
+5. Open a Pull Request
+
+### Code Style Guidelines
+- Follow [Dart style guide](https://dart.dev/guides/language/effective-dart/style)
+- Run `flutter format .` before committing
+- Add comments for complex logic
+- Write unit tests for new features
+- Update documentation
 
 ---
 
-**Made with ❤️ for Panimalar Engineering College**
+## 📄 License
 
-*Last Updated: December 30, 2025*
+This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- Flutter team for the amazing framework
+- Firebase for scalable backend infrastructure
+- Google Maps for mapping services
+- All contributors and beta testers
+
+---
+
+## 📞 Support & Contact
+
+- **Issues:** [GitHub Issues](https://github.com/yourusername/bus_tracker/issues)
+- **Email:** shanthosh.krishnan@outlook.com
+
+
+---
+
+## 🗺️ Roadmap
+
+- [ ] Push notification enhancements with customizable alerts
+- [ ] Offline mode with local database caching
+- [ ] In-app chat between students and drivers
+- [ ] QR code-based attendance tracking
+- [ ] Advanced analytics dashboard with charts
+- [ ] Multi-language support (i18n)
+- [ ] Dark mode theme
+- [ ] Web admin panel
+- [ ] Route optimization with AI
+- [ ] Integration with school management systems
+
+---
+
+## 📚 Additional Documentation
+
+- **[README_FRONTEND.md](README_FRONTEND.md)** - Frontend architecture, UI components, and state management
+- **[README_BACKEND.md](README_BACKEND.md)** - Backend services, Firebase structure, and API reference
+
+---
+
+**Made with ❤️ using Flutter & Firebase**
+
+**Version:** 1.0.0  
+**Last Updated:** January 23, 2026

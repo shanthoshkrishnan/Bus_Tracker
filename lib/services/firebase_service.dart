@@ -45,6 +45,21 @@ class FirebaseService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      // If user is a driver, create a driver record
+      if (role.toLowerCase() == 'driver') {
+        await _firestore.collection('drivers').add({
+          'driverId': userCredential.user!.uid,
+          'driverName': '$firstName $lastName',
+          'driverEmail': email,
+          'driverPhone': '',
+          'assignedBusNumber': '',
+          'assignedRoute': '',
+          'status': 'active',
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
       print('User registered successfully: ${userCredential.user!.email}');
     } catch (e) {
       print('Error registering user: $e');
@@ -191,6 +206,31 @@ class FirebaseService {
         };
       }).toList();
     } catch (e) {
+      // If index error, fallback to fetching all users and filtering
+      if (e.toString().contains('index') || e.toString().contains('requires an index')) {
+        try {
+          QuerySnapshot allUsers = await _firestore.collection('users').get();
+          return allUsers.docs
+              .where((doc) {
+                Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+                return data['role'] == 'driver';
+              })
+              .map((doc) {
+                Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+                return {
+                  'uid': doc.id,
+                  'firstName': data['firstName'] ?? '',
+                  'lastName': data['lastName'] ?? '',
+                  'email': data['email'] ?? '',
+                  'phone': data['phone'] ?? '',
+                };
+              })
+              .toList();
+        } catch (fallbackError) {
+          print('Error in fallback: $fallbackError');
+          rethrow;
+        }
+      }
       print('Error fetching drivers: $e');
       rethrow;
     }
@@ -619,6 +659,285 @@ class FirebaseService {
           .update({'read': true});
     } catch (e) {
       print('Error marking notification as read: $e');
+    }
+  }
+
+  // Get all drivers from drivers collection
+  Future<List<Map<String, dynamic>>> getDriversFromCollection() async {
+    try {
+      QuerySnapshot driverDocs = await _firestore
+          .collection('drivers')
+          .where('status', isEqualTo: 'active')
+          .get();
+
+      return driverDocs.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return {
+          ...data,
+          'documentId': doc.id,
+        };
+      }).toList();
+    } catch (e) {
+      print('Error fetching drivers from drivers collection: $e');
+      return [];
+    }
+  }
+
+  // Update driver assignment (bus and route)
+  Future<void> updateDriverAssignment({
+    required String driverId,
+    required String assignedBusNumber,
+    required String assignedRoute,
+  }) async {
+    try {
+      // Update driver record in drivers collection
+      QuerySnapshot driverDocs = await _firestore
+          .collection('drivers')
+          .where('driverId', isEqualTo: driverId)
+          .get();
+
+      for (var doc in driverDocs.docs) {
+        await doc.reference.update({
+          'assignedBusNumber': assignedBusNumber,
+          'assignedRoute': assignedRoute,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      print('Driver assignment updated successfully');
+    } catch (e) {
+      print('Error updating driver assignment: $e');
+      rethrow;
+    }
+  }
+
+  // Update driver phone
+  Future<void> updateDriverPhone({
+    required String driverId,
+    required String phone,
+  }) async {
+    try {
+      QuerySnapshot driverDocs = await _firestore
+          .collection('drivers')
+          .where('driverId', isEqualTo: driverId)
+          .get();
+
+      for (var doc in driverDocs.docs) {
+        await doc.reference.update({
+          'driverPhone': phone,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      print('Driver phone updated successfully');
+    } catch (e) {
+      print('Error updating driver phone: $e');
+      rethrow;
+    }
+  }
+
+  // Deactivate driver
+  Future<void> deactivateDriver(String driverId) async {
+    try {
+      QuerySnapshot driverDocs = await _firestore
+          .collection('drivers')
+          .where('driverId', isEqualTo: driverId)
+          .get();
+
+      for (var doc in driverDocs.docs) {
+        await doc.reference.update({
+          'status': 'inactive',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      print('Driver deactivated successfully');
+    } catch (e) {
+      print('Error deactivating driver: $e');
+      rethrow;
+    }
+  }
+
+  // Reactivate driver
+  Future<void> reactivateDriver(String driverId) async {
+    try {
+      QuerySnapshot driverDocs = await _firestore
+          .collection('drivers')
+          .where('driverId', isEqualTo: driverId)
+          .get();
+
+      for (var doc in driverDocs.docs) {
+        await doc.reference.update({
+          'status': 'active',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      print('Driver reactivated successfully');
+    } catch (e) {
+      print('Error reactivating driver: $e');
+      rethrow;
+    }
+  }
+
+  // Update user profile AND sync driver record if needed
+  // This is called when user updates their profile
+  Future<void> updateUserProfile({
+    required String userId,
+    required String firstName,
+    required String lastName,
+    required String phone,
+    required String address,
+    required String role,
+  }) async {
+    try {
+      // Get current user data to track role changes
+      final currentUserDoc = await _firestore.collection('users').doc(userId).get();
+      final currentData = currentUserDoc.data() ?? {};
+      final previousRole = currentData['role'] ?? '';
+
+      // Update user profile
+      await _firestore.collection('users').doc(userId).update({
+        'firstName': firstName,
+        'lastName': lastName,
+        'phone': phone,
+        'address': address,
+        'role': role,
+        'previousRole': previousRole, // Track for sync purposes
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Trigger driver sync if user role is or was 'driver'
+      await _syncDriverAfterProfileUpdate(userId, firstName, lastName, phone, role, previousRole);
+
+      print('User profile updated: $userId');
+    } catch (e) {
+      print('Error updating user profile: $e');
+      rethrow;
+    }
+  }
+
+  // Internal method: Handle driver sync on profile update
+  Future<void> _syncDriverAfterProfileUpdate(
+    String userId,
+    String firstName,
+    String lastName,
+    String phone,
+    String newRole,
+    String previousRole,
+  ) async {
+    try {
+      final normalizedRole = newRole.toLowerCase();
+      final normalizedPrevRole = previousRole.toLowerCase();
+
+      // Case 1: User became a driver
+      if (normalizedRole == 'driver' && normalizedPrevRole != 'driver') {
+        await _createDriverRecord(
+          userId: userId,
+          firstName: firstName,
+          lastName: lastName,
+          phone: phone,
+        );
+        print('✓ Driver record created on profile update');
+        return;
+      }
+
+      // Case 2: User is still a driver - sync details
+      if (normalizedRole == 'driver') {
+        await _updateDriverDetails(userId, firstName, lastName, phone);
+        print('✓ Driver details synced on profile update');
+        return;
+      }
+
+      // Case 3: User is no longer a driver - mark as inactive
+      if (normalizedRole != 'driver' && normalizedPrevRole == 'driver') {
+        await _markDriverInactiveByUserId(userId);
+        print('✓ Driver marked inactive on role change');
+      }
+    } catch (e) {
+      print('Error syncing driver on profile update: $e');
+      // Don't rethrow - profile update should still succeed even if driver sync fails
+    }
+  }
+
+  // Internal: Create driver record
+  Future<void> _createDriverRecord({
+    required String userId,
+    required String firstName,
+    required String lastName,
+    required String phone,
+  }) async {
+    try {
+      final existingDriver = await _firestore
+          .collection('drivers')
+          .where('driverId', isEqualTo: userId)
+          .limit(1)
+          .get();
+
+      if (existingDriver.docs.isNotEmpty) {
+        return; // Already exists
+      }
+
+      await _firestore.collection('drivers').add({
+        'driverId': userId,
+        'driverName': '$firstName $lastName'.trim(),
+        'driverEmail': _auth.currentUser?.email ?? '',
+        'driverPhone': phone,
+        'assignedBusNumber': '',
+        'assignedRoute': '',
+        'status': 'active',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Error creating driver record: $e');
+      throw e;
+    }
+  }
+
+  // Internal: Update driver details
+  Future<void> _updateDriverDetails(
+    String userId,
+    String firstName,
+    String lastName,
+    String phone,
+  ) async {
+    try {
+      final driverDocs = await _firestore
+          .collection('drivers')
+          .where('driverId', isEqualTo: userId)
+          .get();
+
+      for (var doc in driverDocs.docs) {
+        await doc.reference.update({
+          'driverName': '$firstName $lastName'.trim(),
+          'driverPhone': phone,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      print('Error updating driver details: $e');
+      throw e;
+    }
+  }
+
+  // Internal: Mark driver as inactive
+  Future<void> _markDriverInactiveByUserId(String userId) async {
+    try {
+      final driverDocs = await _firestore
+          .collection('drivers')
+          .where('driverId', isEqualTo: userId)
+          .get();
+
+      for (var doc in driverDocs.docs) {
+        await doc.reference.update({
+          'status': 'inactive',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      print('Error marking driver inactive: $e');
+      throw e;
     }
   }
 }

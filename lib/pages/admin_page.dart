@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firebase_service.dart';
-import '../models/bus_model.dart';
 import 'bus_management_page.dart';
+import 'route_management_page.dart';
+import 'driver_management_page.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -13,18 +14,27 @@ class AdminPage extends StatefulWidget {
 
 class _AdminPageState extends State<AdminPage> {
   final FirebaseService _firebaseService = FirebaseService();
-  late Future<List<BusModel>> _busesFuture;
 
-  @override
-  void initState() {
-    super.initState();
-    _busesFuture = _firebaseService.getAllBuses();
+  Future<int> _getBusCount() async {
+    final buses = await _firebaseService.getAllBuses();
+    return buses.length;
   }
 
-  void _refreshBuses() {
-    setState(() {
-      _busesFuture = _firebaseService.getAllBuses();
-    });
+  Future<int> _getDriverCount() async {
+    final drivers =
+        await FirebaseFirestore.instance.collection('drivers').get();
+    return drivers.docs.length;
+  }
+
+  Future<int> _getRouteCount() async {
+    final routes =
+        await FirebaseFirestore.instance.collection('routes').get();
+    return routes.docs.length;
+  }
+
+  Future<int> _getActiveBusCount() async {
+    final buses = await _firebaseService.getAllBuses();
+    return buses.where((bus) => bus.status == 'active').length;
   }
 
   void _createDummyBuses() async {
@@ -130,7 +140,7 @@ class _AdminPageState extends State<AdminPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Demo data created! 4 buses in demo collection, 1 live bus created.')),
         );
-        _refreshBuses();
+        setState(() {});
       }
     } catch (e) {
       if (mounted) {
@@ -193,6 +203,7 @@ class _AdminPageState extends State<AdminPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Demo routes created successfully!')),
         );
+        setState(() {});
       }
     } catch (e) {
       if (mounted) {
@@ -203,445 +214,394 @@ class _AdminPageState extends State<AdminPage> {
     }
   }
 
-  void _navigateToBusManagement({String? busId}) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => BusManagementPage(busId: busId),
-      ),
-    ).then((_) => _refreshBuses());
-  }
-
-  void _deleteBus(String busId) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Bus'),
-        content: const Text('Are you sure you want to delete this bus?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                await _firebaseService.deleteBus(busId);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Bus deleted successfully')),
-                  );
-                  _refreshBuses();
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
-                }
-              }
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F0E8),
+      backgroundColor: const Color(0xFFFAFAFA),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF8B6F47),
+        backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'Bus Management',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Text(
+          'Admin Dashboard',
+          style: TextStyle(
+            color: const Color(0xFF18181B),
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(4.0),
-            child: ElevatedButton.icon(
-              onPressed: _createDemoRoutes,
-              icon: const Icon(Icons.route_outlined, size: 18),
-              label: const Text('Routes'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF8B6F47),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(4.0),
-            child: ElevatedButton.icon(
-              onPressed: _createDummyBuses,
-              icon: const Icon(Icons.upload_outlined, size: 18),
-              label: const Text('Demo Data'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF8B6F47),
-              ),
-            ),
-          ),
-        ],
       ),
-      body: FutureBuilder<List<BusModel>>(
-        future: _busesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text('Error: ${snapshot.error}'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _refreshBuses,
-                    child: const Text('Retry'),
-                  ),
-                ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Welcome Card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF18181B),
+                borderRadius: BorderRadius.circular(16),
               ),
-            );
-          }
-
-          final buses = snapshot.data ?? [];
-
-          if (buses.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Row(
                 children: [
-                  Icon(Icons.directions_bus_outlined,
-                      size: 80, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No buses yet',
-                    style: TextStyle(fontSize: 20, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Create a new bus to get started',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () => _navigateToBusManagement(),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Create Bus'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF8B6F47),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.admin_panel_settings_outlined,
+                      color: Colors.white,
+                      size: 28,
                     ),
                   ),
-                ],
-              ),
-            );
-          }
-
-          return GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              childAspectRatio: 0.85,
-            ),
-            itemCount: buses.length + 1,
-            itemBuilder: (context, index) {
-              if (index == buses.length) {
-                // Add new bus button
-                return GestureDetector(
-                  onTap: () => _navigateToBusManagement(),
-                  child: Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.grey[300]!,
-                            Colors.grey[200]!,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Admin Control',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.grey[400],
-                            ),
-                            child: const Icon(
-                              Icons.add,
-                              size: 32,
-                              color: Colors.white,
-                            ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Manage buses, drivers & routes',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 13,
                           ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Add Bus',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Management Options
+            Text(
+              'Management',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF18181B),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            _buildManagementCard(
+              context,
+              icon: Icons.directions_bus_outlined,
+              title: 'Bus Management',
+              subtitle: 'Add, edit, and manage buses',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const BusManagementPage(),
                   ),
                 );
-              }
+              },
+            ),
+            const SizedBox(height: 12),
 
-              final bus = buses[index];
-              return _buildBusCard(bus);
-            },
-          );
-        },
+            _buildManagementCard(
+              context,
+              icon: Icons.person_outline,
+              title: 'Driver Management',
+              subtitle: 'Assign and manage drivers',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const DriverManagementPage(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+
+            _buildManagementCard(
+              context,
+              icon: Icons.route_outlined,
+              title: 'Route Management',
+              subtitle: 'Create and manage routes',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const RouteManagementPage(),
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            // Quick Stats
+            Text(
+              'Quick Stats',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF18181B),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            Row(
+              children: [
+                Expanded(
+                  child: FutureBuilder<int>(
+                    future: _getBusCount(),
+                    builder: (context, snapshot) {
+                      final value = snapshot.data?.toString() ?? '0';
+                      return _buildStatCard(
+                        icon: Icons.directions_bus,
+                        value: value,
+                        label: 'Total Buses',
+                        color: const Color(0xFF18181B),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FutureBuilder<int>(
+                    future: _getDriverCount(),
+                    builder: (context, snapshot) {
+                      final value = snapshot.data?.toString() ?? '0';
+                      return _buildStatCard(
+                        icon: Icons.person,
+                        value: value,
+                        label: 'Drivers',
+                        color: const Color(0xFF18181B),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: FutureBuilder<int>(
+                    future: _getRouteCount(),
+                    builder: (context, snapshot) {
+                      final value = snapshot.data?.toString() ?? '0';
+                      return _buildStatCard(
+                        icon: Icons.route,
+                        value: value,
+                        label: 'Routes',
+                        color: const Color(0xFF18181B),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FutureBuilder<int>(
+                    future: _getActiveBusCount(),
+                    builder: (context, snapshot) {
+                      final value = snapshot.data?.toString() ?? '0';
+                      return _buildStatCard(
+                        icon: Icons.check_circle,
+                        value: value,
+                        label: 'Active',
+                        color: const Color(0xFF16A34A),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // Demo Controls Section
+            Text(
+              'Demo Controls',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF18181B),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDemoButton(
+                    icon: Icons.add_location,
+                    label: 'Demo Routes',
+                    onPressed: _createDemoRoutes,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildDemoButton(
+                    icon: Icons.download,
+                    label: 'Demo Buses',
+                    onPressed: _createDummyBuses,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildBusCard(BusModel bus) {
-    final status = bus.status;
-    final statusColor = status == 'active' ? Colors.green : Colors.orange;
-
-    return GestureDetector(
-      onTap: () => _navigateToBusManagement(busId: bus.id),
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF8B6F47).withOpacity(0.1),
-                const Color(0xFF8B6F47).withOpacity(0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF8B6F47).withOpacity(0.2),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
+  Widget _buildManagementCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE4E4E7)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFAFAFA),
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  child: Icon(icon, color: const Color(0xFF18181B), size: 24),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            bus.busNumber,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF5C4A3D),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            bus.busRoute,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey[700],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        status.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Content
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
+                const SizedBox(width: 16),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Driver info
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.person_outline,
-                                size: 14,
-                                color: Color(0xFF8B6F47),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  bus.driverName,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF5C4A3D),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.phone_outlined,
-                                size: 14,
-                                color: Color(0xFF8B6F47),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  bus.driverPhone,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Color(0xFF7A6B60),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF18181B),
+                        ),
                       ),
-                      // Vehicle info
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.directions_car_outlined,
-                            size: 14,
-                            color: Color(0xFF8B6F47),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              bus.vehicleNumber,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Color(0xFF7A6B60),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: const Color(0xFF71717A),
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              // Action buttons
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(
-                      color: Colors.grey[300]!,
-                    ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: const Color(0xFF71717A),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String value,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE4E4E7)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF18181B),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: const Color(0xFF71717A),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDemoButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE4E4E7)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onPressed,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              children: [
+                Icon(icon, color: const Color(0xFF18181B), size: 24),
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF18181B),
                   ),
+                  textAlign: TextAlign.center,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => _navigateToBusManagement(busId: bus.id),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: const Icon(
-                            Icons.edit_outlined,
-                            size: 18,
-                            color: Color(0xFF8B6F47),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Container(
-                      width: 1,
-                      height: 20,
-                      color: Colors.grey[300],
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => _deleteBus(bus.id),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: const Icon(
-                            Icons.delete_outline,
-                            size: 18,
-                            color: Colors.red,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
