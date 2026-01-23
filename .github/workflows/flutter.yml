@@ -48,7 +48,7 @@ jobs:
           files: ./coverage/lcov.info
 
       - name: Build APK (Android)
-        run: flutter build apk --debug --no-sound-null-safety
+        run: flutter build apk --debug
 
       - name: Build App Bundle (Android)
         run: flutter build appbundle --debug
