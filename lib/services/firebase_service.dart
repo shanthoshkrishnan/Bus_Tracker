@@ -892,7 +892,7 @@ class FirebaseService {
       });
     } catch (e) {
       print('Error creating driver record: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -918,7 +918,7 @@ class FirebaseService {
       }
     } catch (e) {
       print('Error updating driver details: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -938,7 +938,7 @@ class FirebaseService {
       }
     } catch (e) {
       print('Error marking driver inactive: $e');
-      throw e;
+      rethrow;
     }
   }
 }

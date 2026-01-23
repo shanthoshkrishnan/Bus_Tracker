@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print, unused_element
 import 'package:flutter/material.dart';
 import '../services/firebase_service.dart';
 

@@ -101,7 +101,7 @@ jobs:
         run: flutter pub get
 
       - name: Pub audit
-        run: pub audit
+        run: flutter pub audit
 
       - name: Check for secrets
         uses: gitleaks/gitleaks-action@v2

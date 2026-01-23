@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print, use_build_context_synchronously, deprecated_member_use, unused_field
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/location_model.dart';
