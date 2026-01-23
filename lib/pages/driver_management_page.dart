@@ -26,7 +26,9 @@ class _DriverManagementPageState extends State<DriverManagementPage> {
   Future<void> _loadAvailableBuses() async {
     try {
       final snapshot = await _firestore.collection('buses').get();
-      final buses = snapshot.docs.map((doc) => doc['busNumber'].toString()).toList();
+      final buses = snapshot.docs
+          .map((doc) => doc['busNumber'].toString())
+          .toList();
       setState(() => _availableBuses = buses);
       print('✓ Loaded ${buses.length} buses');
     } catch (e) {
@@ -37,7 +39,9 @@ class _DriverManagementPageState extends State<DriverManagementPage> {
   Future<void> _loadAvailableRoutes() async {
     try {
       final snapshot = await _firestore.collection('routes').get();
-      final routes = snapshot.docs.map((doc) => doc['routeName'].toString()).toList();
+      final routes = snapshot.docs
+          .map((doc) => doc['routeName'].toString())
+          .toList();
       setState(() => _availableRoutes = routes);
       print('✓ Loaded ${routes.length} routes');
     } catch (e) {
@@ -236,15 +240,17 @@ class _DriverManagementPageState extends State<DriverManagementPage> {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('✓ Driver created! Password: $tempPassword'),
+                        content: Text(
+                          '✓ Driver created! Password: $tempPassword',
+                        ),
                         backgroundColor: Colors.green,
                       ),
                     );
                   }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               }
             },
@@ -404,9 +410,9 @@ class _DriverManagementPageState extends State<DriverManagementPage> {
                     );
                   }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               }
             },
@@ -841,8 +847,11 @@ class _DriverManagementPageState extends State<DriverManagementPage> {
                                 IconButton(
                                   onPressed: () =>
                                       _showEditDriverDialog(userId, data),
-                                  icon: const Icon(Icons.edit,
-                                      size: 20, color: Color(0xFF18181B)),
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    size: 20,
+                                    color: Color(0xFF18181B),
+                                  ),
                                   tooltip: 'Edit Details',
                                 ),
                               ],

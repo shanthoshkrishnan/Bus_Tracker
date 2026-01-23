@@ -6,10 +6,7 @@ import '../models/bus_model.dart';
 class BusDetailsPopup extends StatefulWidget {
   final BusModel bus;
 
-  const BusDetailsPopup({
-    super.key,
-    required this.bus,
-  });
+  const BusDetailsPopup({super.key, required this.bus});
 
   @override
   State<BusDetailsPopup> createState() => _BusDetailsPopupState();
@@ -85,7 +82,11 @@ class _BusDetailsPopupState extends State<BusDetailsPopup> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -150,7 +151,8 @@ class _BusDetailsPopupState extends State<BusDetailsPopup> {
                   _buildDetailCard(
                     icon: Icons.route_outlined,
                     label: 'Route',
-                    value: '${widget.bus.departureLocation} → ${widget.bus.arrivalLocation}',
+                    value:
+                        '${widget.bus.departureLocation} → ${widget.bus.arrivalLocation}',
                   ),
 
                   const SizedBox(height: 16),
@@ -311,10 +313,7 @@ class _BusDetailsPopupState extends State<BusDetailsPopup> {
                   onPressed: () => Navigator.of(context).pop(),
                   child: Text(
                     'Close',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),

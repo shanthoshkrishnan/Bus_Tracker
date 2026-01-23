@@ -5,10 +5,7 @@ import '../pages/bus_details_popup.dart';
 class BusCard extends StatelessWidget {
   final BusModel bus;
 
-  const BusCard({
-    super.key,
-    required this.bus,
-  });
+  const BusCard({super.key, required this.bus});
 
   @override
   Widget build(BuildContext context) {
@@ -23,10 +20,7 @@ class BusCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Colors.blue[400]!,
-              Colors.blue[600]!,
-            ],
+            colors: [Colors.blue[400]!, Colors.blue[600]!],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -68,10 +62,7 @@ class BusCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         'Bus #${bus.busNumber}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blue[200],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.blue[200]),
                       ),
                     ],
                   ),
@@ -109,8 +100,7 @@ class BusCard extends StatelessWidget {
                   _buildInfoRow(
                     icon: Icons.route,
                     label: 'Route',
-                    value:
-                        '${bus.departureLocation} → ${bus.arrivalLocation}',
+                    value: '${bus.departureLocation} → ${bus.arrivalLocation}',
                   ),
                   const SizedBox(height: 8),
 
@@ -173,11 +163,7 @@ class BusCard extends StatelessWidget {
   }) {
     return Row(
       children: [
-        Icon(
-          icon,
-          color: Colors.white,
-          size: 18,
-        ),
+        Icon(icon, color: Colors.white, size: 18),
         const SizedBox(width: 8),
         Expanded(
           child: Column(

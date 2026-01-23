@@ -22,14 +22,14 @@ class _AdminPageState extends State<AdminPage> {
   }
 
   Future<int> _getDriverCount() async {
-    final drivers =
-        await FirebaseFirestore.instance.collection('drivers').get();
+    final drivers = await FirebaseFirestore.instance
+        .collection('drivers')
+        .get();
     return drivers.docs.length;
   }
 
   Future<int> _getRouteCount() async {
-    final routes =
-        await FirebaseFirestore.instance.collection('routes').get();
+    final routes = await FirebaseFirestore.instance.collection('routes').get();
     return routes.docs.length;
   }
 
@@ -139,7 +139,11 @@ class _AdminPageState extends State<AdminPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Demo data created! 4 buses in demo collection, 1 live bus created.')),
+          const SnackBar(
+            content: Text(
+              'Demo data created! 4 buses in demo collection, 1 live bus created.',
+            ),
+          ),
         );
         setState(() {});
       }
@@ -167,9 +171,17 @@ class _AdminPageState extends State<AdminPage> {
         'departureTime': '15:07', // 3:07 PM
         'arrivalTime': '16:30',
         'waypoints': [
-          {'location': 'Panimalar Engineering College', 'latitude': 12.8234, 'longitude': 79.9619},
+          {
+            'location': 'Panimalar Engineering College',
+            'latitude': 12.8234,
+            'longitude': 79.9619,
+          },
           {'location': 'Urapakkam', 'latitude': 12.7850, 'longitude': 79.9585},
-          {'location': 'Chengalpattu', 'latitude': 12.6789, 'longitude': 79.9608},
+          {
+            'location': 'Chengalpattu',
+            'latitude': 12.6789,
+            'longitude': 79.9608,
+          },
         ],
         'routeType': 'evening',
         'createdAt': FieldValue.serverTimestamp(),
@@ -188,9 +200,17 @@ class _AdminPageState extends State<AdminPage> {
         'departureTime': '07:00', // 7:00 AM
         'arrivalTime': '08:30',
         'waypoints': [
-          {'location': 'Chengalpattu', 'latitude': 12.6789, 'longitude': 79.9608},
+          {
+            'location': 'Chengalpattu',
+            'latitude': 12.6789,
+            'longitude': 79.9608,
+          },
           {'location': 'Urapakkam', 'latitude': 12.7850, 'longitude': 79.9585},
-          {'location': 'Panimalar Engineering College', 'latitude': 12.8234, 'longitude': 79.9619},
+          {
+            'location': 'Panimalar Engineering College',
+            'latitude': 12.8234,
+            'longitude': 79.9619,
+          },
         ],
         'routeType': 'morning',
         'createdAt': FieldValue.serverTimestamp(),
@@ -208,9 +228,9 @@ class _AdminPageState extends State<AdminPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating routes: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error creating routes: $e')));
       }
     }
   }

@@ -73,7 +73,10 @@ class DriverSyncService {
   }
 
   /// Internal: Create or update driver record
-  Future<void> _syncDriverRecord(String userId, Map<String, dynamic> userData) async {
+  Future<void> _syncDriverRecord(
+    String userId,
+    Map<String, dynamic> userData,
+  ) async {
     try {
       final driverRef = _db.collection('drivers');
 
@@ -180,9 +183,7 @@ class DriverSyncService {
           .where('status', isEqualTo: 'active')
           .get();
 
-      return snapshot.docs
-          .map((doc) => {...doc.data(), 'id': doc.id})
-          .toList();
+      return snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList();
     } catch (e) {
       print('Error getting active drivers: $e');
       return [];

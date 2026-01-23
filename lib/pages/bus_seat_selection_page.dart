@@ -29,16 +29,13 @@ class _BusSeatSelectionPageState extends State<BusSeatSelectionPage> {
 
   void _initializeSeats() {
     // 22 seats total (2 columns x 11 rows)
-    seats = List.generate(
-      22,
-      (index) {
-        // Mark some seats as occupied for demo
-        if ([2, 5, 8, 10, 15, 19].contains(index)) {
-          return SeatStatus.occupied;
-        }
-        return SeatStatus.available;
-      },
-    );
+    seats = List.generate(22, (index) {
+      // Mark some seats as occupied for demo
+      if ([2, 5, 8, 10, 15, 19].contains(index)) {
+        return SeatStatus.occupied;
+      }
+      return SeatStatus.available;
+    });
   }
 
   void _toggleSeat(int index) {
@@ -156,7 +153,10 @@ class _BusSeatSelectionPageState extends State<BusSeatSelectionPage> {
                 children: [
                   // Driver Section
                   Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFAFAFA),
                       borderRadius: BorderRadius.circular(12),
@@ -165,7 +165,11 @@ class _BusSeatSelectionPageState extends State<BusSeatSelectionPage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.drive_eta, color: const Color(0xFF18181B), size: 20),
+                        Icon(
+                          Icons.drive_eta,
+                          color: const Color(0xFF18181B),
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Driver',
@@ -182,39 +186,36 @@ class _BusSeatSelectionPageState extends State<BusSeatSelectionPage> {
 
                   // Seats Grid
                   Column(
-                    children: List.generate(
-                      11,
-                      (rowIndex) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Left seat
-                              _buildSeat(rowIndex * 2),
-                              const SizedBox(width: 12),
-                              // Aisle
-                              SizedBox(
-                                width: 30,
-                                child: Center(
-                                  child: Text(
-                                    '${rowIndex + 1}',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: const Color(0xFF71717A),
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                    children: List.generate(11, (rowIndex) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Left seat
+                            _buildSeat(rowIndex * 2),
+                            const SizedBox(width: 12),
+                            // Aisle
+                            SizedBox(
+                              width: 30,
+                              child: Center(
+                                child: Text(
+                                  '${rowIndex + 1}',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: const Color(0xFF71717A),
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              // Right seat
-                              _buildSeat(rowIndex * 2 + 1),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                            ),
+                            const SizedBox(width: 12),
+                            // Right seat
+                            _buildSeat(rowIndex * 2 + 1),
+                          ],
+                        ),
+                      );
+                    }),
                   ),
                 ],
               ),
@@ -247,7 +248,10 @@ class _BusSeatSelectionPageState extends State<BusSeatSelectionPage> {
                       runSpacing: 8,
                       children: selectedSeats.map((index) {
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.green.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
@@ -294,14 +298,13 @@ class _BusSeatSelectionPageState extends State<BusSeatSelectionPage> {
                   backgroundColor: const Color(0xFF18181B),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  disabledBackgroundColor: const Color(0xFF71717A).withOpacity(0.5),
+                  disabledBackgroundColor: const Color(
+                    0xFF71717A,
+                  ).withOpacity(0.5),
                 ),
                 child: const Text(
                   'Book Selected Seats',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -339,11 +342,7 @@ class _BusSeatSelectionPageState extends State<BusSeatSelectionPage> {
           ),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(
-          Icons.event_seat,
-          color: seatColor,
-          size: 20,
-        ),
+        child: Icon(Icons.event_seat, color: seatColor, size: 20),
       ),
     );
   }
@@ -356,11 +355,7 @@ class _BusSeatSelectionPageState extends State<BusSeatSelectionPage> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          color: color,
-          size: 24,
-        ),
+        Icon(icon, color: color, size: 24),
         const SizedBox(height: 4),
         Text(
           label,
@@ -375,8 +370,4 @@ class _BusSeatSelectionPageState extends State<BusSeatSelectionPage> {
   }
 }
 
-enum SeatStatus {
-  available,
-  selected,
-  occupied,
-}
+enum SeatStatus { available, selected, occupied }

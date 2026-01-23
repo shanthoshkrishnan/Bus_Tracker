@@ -41,11 +41,13 @@ class LocationTrackingService {
       if (snapshot.exists) {
         List<BusLocation> buses = [];
         Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
-        
+
         data.forEach((busId, busData) {
-          buses.add(BusLocation.fromJson(busId, Map<String, dynamic>.from(busData)));
+          buses.add(
+            BusLocation.fromJson(busId, Map<String, dynamic>.from(busData)),
+          );
         });
-        
+
         return buses;
       }
       return [];
@@ -60,7 +62,10 @@ class LocationTrackingService {
     try {
       final snapshot = await _busLocationsRef.child(busId).get();
       if (snapshot.exists) {
-        return BusLocation.fromJson(busId, Map<String, dynamic>.from(snapshot.value as Map<dynamic, dynamic>));
+        return BusLocation.fromJson(
+          busId,
+          Map<String, dynamic>.from(snapshot.value as Map<dynamic, dynamic>),
+        );
       }
       return null;
     } catch (e) {
@@ -74,12 +79,15 @@ class LocationTrackingService {
     return _busLocationsRef.onValue.map((event) {
       if (event.snapshot.exists) {
         List<BusLocation> buses = [];
-        Map<dynamic, dynamic> data = event.snapshot.value as Map<dynamic, dynamic>;
-        
+        Map<dynamic, dynamic> data =
+            event.snapshot.value as Map<dynamic, dynamic>;
+
         data.forEach((busId, busData) {
-          buses.add(BusLocation.fromJson(busId, Map<String, dynamic>.from(busData)));
+          buses.add(
+            BusLocation.fromJson(busId, Map<String, dynamic>.from(busData)),
+          );
         });
-        
+
         return buses;
       }
       return [];
@@ -90,27 +98,37 @@ class LocationTrackingService {
   Stream<BusLocation?> streamBusLocation(String busId) {
     return _busLocationsRef.child(busId).onValue.map((event) {
       if (event.snapshot.exists) {
-        return BusLocation.fromJson(busId, Map<String, dynamic>.from(event.snapshot.value as Map<dynamic, dynamic>));
+        return BusLocation.fromJson(
+          busId,
+          Map<String, dynamic>.from(
+            event.snapshot.value as Map<dynamic, dynamic>,
+          ),
+        );
       }
       return null;
     });
   }
 
   /// Update bus status (departed, in-transit, arrived, delayed)
-  Future<void> updateBusStatus(String busId, String status, {String? delayReason, int? delayMinutes}) async {
+  Future<void> updateBusStatus(
+    String busId,
+    String status, {
+    String? delayReason,
+    int? delayMinutes,
+  }) async {
     try {
       Map<String, dynamic> updates = {
         'status': status,
         'lastUpdated': DateTime.now().toIso8601String(),
       };
-      
+
       if (delayReason != null) {
         updates['delayReason'] = delayReason;
       }
       if (delayMinutes != null) {
         updates['delayMinutes'] = delayMinutes;
       }
-      
+
       await _busLocationsRef.child(busId).update(updates);
       print('✅ Bus status updated: $status');
     } catch (e) {
@@ -120,7 +138,11 @@ class LocationTrackingService {
   }
 
   /// Report delay with reason
-  Future<void> reportBusDelay(String busId, String delayReason, int delayMinutes) async {
+  Future<void> reportBusDelay(
+    String busId,
+    String delayReason,
+    int delayMinutes,
+  ) async {
     try {
       await _busLocationsRef.child(busId).update({
         'status': 'delayed',
@@ -140,7 +162,9 @@ class LocationTrackingService {
   /// Update driver location in real-time (from GPS)
   Future<void> updateDriverLocation(DriverLocation driverLocation) async {
     try {
-      await _driverLocationsRef.child(driverLocation.driverId).set(driverLocation.toJson());
+      await _driverLocationsRef
+          .child(driverLocation.driverId)
+          .set(driverLocation.toJson());
       print('✅ Driver location updated: ${driverLocation.driverName}');
     } catch (e) {
       print('❌ Error updating driver location: $e');
@@ -155,11 +179,16 @@ class LocationTrackingService {
       if (snapshot.exists) {
         List<DriverLocation> drivers = [];
         Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
-        
+
         data.forEach((driverId, driverData) {
-          drivers.add(DriverLocation.fromJson(driverId, Map<String, dynamic>.from(driverData)));
+          drivers.add(
+            DriverLocation.fromJson(
+              driverId,
+              Map<String, dynamic>.from(driverData),
+            ),
+          );
         });
-        
+
         return drivers;
       }
       return [];
@@ -174,7 +203,10 @@ class LocationTrackingService {
     try {
       final snapshot = await _driverLocationsRef.child(driverId).get();
       if (snapshot.exists) {
-        return DriverLocation.fromJson(driverId, Map<String, dynamic>.from(snapshot.value as Map<dynamic, dynamic>));
+        return DriverLocation.fromJson(
+          driverId,
+          Map<String, dynamic>.from(snapshot.value as Map<dynamic, dynamic>),
+        );
       }
       return null;
     } catch (e) {
@@ -188,12 +220,18 @@ class LocationTrackingService {
     return _driverLocationsRef.onValue.map((event) {
       if (event.snapshot.exists) {
         List<DriverLocation> drivers = [];
-        Map<dynamic, dynamic> data = event.snapshot.value as Map<dynamic, dynamic>;
-        
+        Map<dynamic, dynamic> data =
+            event.snapshot.value as Map<dynamic, dynamic>;
+
         data.forEach((driverId, driverData) {
-          drivers.add(DriverLocation.fromJson(driverId, Map<String, dynamic>.from(driverData)));
+          drivers.add(
+            DriverLocation.fromJson(
+              driverId,
+              Map<String, dynamic>.from(driverData),
+            ),
+          );
         });
-        
+
         return drivers;
       }
       return [];
@@ -204,7 +242,12 @@ class LocationTrackingService {
   Stream<DriverLocation?> streamDriverLocation(String driverId) {
     return _driverLocationsRef.child(driverId).onValue.map((event) {
       if (event.snapshot.exists) {
-        return DriverLocation.fromJson(driverId, Map<String, dynamic>.from(event.snapshot.value as Map<dynamic, dynamic>));
+        return DriverLocation.fromJson(
+          driverId,
+          Map<String, dynamic>.from(
+            event.snapshot.value as Map<dynamic, dynamic>,
+          ),
+        );
       }
       return null;
     });
@@ -244,11 +287,13 @@ class LocationTrackingService {
       if (snapshot.exists) {
         List<BusRoute> routes = [];
         Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
-        
+
         data.forEach((routeId, routeData) {
-          routes.add(BusRoute.fromJson(routeId, Map<String, dynamic>.from(routeData)));
+          routes.add(
+            BusRoute.fromJson(routeId, Map<String, dynamic>.from(routeData)),
+          );
         });
-        
+
         return routes;
       }
       return [];
@@ -263,7 +308,10 @@ class LocationTrackingService {
     try {
       final snapshot = await _busRoutesRef.child(routeId).get();
       if (snapshot.exists) {
-        return BusRoute.fromJson(routeId, Map<String, dynamic>.from(snapshot.value as Map<dynamic, dynamic>));
+        return BusRoute.fromJson(
+          routeId,
+          Map<String, dynamic>.from(snapshot.value as Map<dynamic, dynamic>),
+        );
       }
       return null;
     } catch (e) {
@@ -277,12 +325,15 @@ class LocationTrackingService {
     return _busRoutesRef.onValue.map((event) {
       if (event.snapshot.exists) {
         List<BusRoute> routes = [];
-        Map<dynamic, dynamic> data = event.snapshot.value as Map<dynamic, dynamic>;
-        
+        Map<dynamic, dynamic> data =
+            event.snapshot.value as Map<dynamic, dynamic>;
+
         data.forEach((routeId, routeData) {
-          routes.add(BusRoute.fromJson(routeId, Map<String, dynamic>.from(routeData)));
+          routes.add(
+            BusRoute.fromJson(routeId, Map<String, dynamic>.from(routeData)),
+          );
         });
-        
+
         return routes;
       }
       return [];
@@ -354,7 +405,7 @@ class LocationTrackingService {
     try {
       final route = await getBusRoute(routeId);
       if (route == null) return [];
-      
+
       List<BusLocation> buses = [];
       for (String busId in route.assignedBuses) {
         final bus = await getBusLocation(busId);
@@ -374,7 +425,9 @@ class LocationTrackingService {
   /// Assign a bus to a student
   Future<void> assignBusToStudent(StudentBusAssignment assignment) async {
     try {
-      await _studentAssignmentsRef.child(assignment.assignmentId).set(assignment.toJson());
+      await _studentAssignmentsRef
+          .child(assignment.assignmentId)
+          .set(assignment.toJson());
       print('✅ Bus assigned to student: ${assignment.studentName}');
     } catch (e) {
       print('❌ Error assigning bus to student: $e');
@@ -389,14 +442,16 @@ class LocationTrackingService {
       if (snapshot.exists) {
         List<StudentBusAssignment> assignments = [];
         Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
-        
+
         data.forEach((assignmentId, assignmentData) {
-          assignments.add(StudentBusAssignment.fromJson(
-            assignmentId,
-            Map<String, dynamic>.from(assignmentData),
-          ));
+          assignments.add(
+            StudentBusAssignment.fromJson(
+              assignmentId,
+              Map<String, dynamic>.from(assignmentData),
+            ),
+          );
         });
-        
+
         return assignments;
       }
       return [];
@@ -413,7 +468,7 @@ class LocationTrackingService {
           .orderByChild('studentId')
           .equalTo(studentId)
           .get();
-      
+
       if (query.exists) {
         Map<dynamic, dynamic> data = query.value as Map<dynamic, dynamic>;
         final assignmentId = data.keys.first;
@@ -444,7 +499,9 @@ class LocationTrackingService {
   }
 
   /// Stream real-time bus location updates for a specific student (single bus)
-  Stream<BusLocation?> streamStudentAssignedBusLocation(String studentId) async* {
+  Stream<BusLocation?> streamStudentAssignedBusLocation(
+    String studentId,
+  ) async* {
     try {
       final assignment = await getStudentAssignment(studentId);
       if (assignment != null) {
@@ -460,15 +517,18 @@ class LocationTrackingService {
     return _studentAssignmentsRef.onValue.map((event) {
       if (event.snapshot.exists) {
         List<StudentBusAssignment> assignments = [];
-        Map<dynamic, dynamic> data = event.snapshot.value as Map<dynamic, dynamic>;
-        
+        Map<dynamic, dynamic> data =
+            event.snapshot.value as Map<dynamic, dynamic>;
+
         data.forEach((assignmentId, assignmentData) {
-          assignments.add(StudentBusAssignment.fromJson(
-            assignmentId,
-            Map<String, dynamic>.from(assignmentData),
-          ));
+          assignments.add(
+            StudentBusAssignment.fromJson(
+              assignmentId,
+              Map<String, dynamic>.from(assignmentData),
+            ),
+          );
         });
-        
+
         return assignments;
       }
       return [];
@@ -476,24 +536,28 @@ class LocationTrackingService {
   }
 
   /// Get assignments by route ID (all students on a specific route)
-  Future<List<StudentBusAssignment>> getStudentAssignmentsByRoute(String routeId) async {
+  Future<List<StudentBusAssignment>> getStudentAssignmentsByRoute(
+    String routeId,
+  ) async {
     try {
       final query = await _studentAssignmentsRef
           .orderByChild('routeId')
           .equalTo(routeId)
           .get();
-      
+
       if (query.exists) {
         List<StudentBusAssignment> assignments = [];
         Map<dynamic, dynamic> data = query.value as Map<dynamic, dynamic>;
-        
+
         data.forEach((assignmentId, assignmentData) {
-          assignments.add(StudentBusAssignment.fromJson(
-            assignmentId,
-            Map<String, dynamic>.from(assignmentData),
-          ));
+          assignments.add(
+            StudentBusAssignment.fromJson(
+              assignmentId,
+              Map<String, dynamic>.from(assignmentData),
+            ),
+          );
         });
-        
+
         return assignments;
       }
       return [];
@@ -517,7 +581,9 @@ class LocationTrackingService {
   /// Update student bus assignment
   Future<void> updateStudentAssignment(StudentBusAssignment assignment) async {
     try {
-      await _studentAssignmentsRef.child(assignment.assignmentId).update(assignment.toJson());
+      await _studentAssignmentsRef
+          .child(assignment.assignmentId)
+          .update(assignment.toJson());
       print('✅ Student assignment updated');
     } catch (e) {
       print('❌ Error updating student assignment: $e');
@@ -545,11 +611,13 @@ class LocationTrackingService {
       if (snapshot.exists) {
         List<RouteTable> routes = [];
         Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
-        
+
         data.forEach((routeId, routeData) {
-          routes.add(RouteTable.fromJson(routeId, Map<String, dynamic>.from(routeData)));
+          routes.add(
+            RouteTable.fromJson(routeId, Map<String, dynamic>.from(routeData)),
+          );
         });
-        
+
         return routes;
       }
       return [];
@@ -564,7 +632,10 @@ class LocationTrackingService {
     try {
       final snapshot = await _routeTablesRef.child(routeId).get();
       if (snapshot.exists) {
-        return RouteTable.fromJson(routeId, Map<String, dynamic>.from(snapshot.value as Map<dynamic, dynamic>));
+        return RouteTable.fromJson(
+          routeId,
+          Map<String, dynamic>.from(snapshot.value as Map<dynamic, dynamic>),
+        );
       }
       return null;
     } catch (e) {
@@ -579,12 +650,15 @@ class LocationTrackingService {
     return _routeTablesRef.onValue.map((event) {
       if (event.snapshot.exists) {
         List<RouteTable> routes = [];
-        Map<dynamic, dynamic> data = event.snapshot.value as Map<dynamic, dynamic>;
-        
+        Map<dynamic, dynamic> data =
+            event.snapshot.value as Map<dynamic, dynamic>;
+
         data.forEach((routeId, routeData) {
-          routes.add(RouteTable.fromJson(routeId, Map<String, dynamic>.from(routeData)));
+          routes.add(
+            RouteTable.fromJson(routeId, Map<String, dynamic>.from(routeData)),
+          );
         });
-        
+
         return routes;
       }
       return [];
@@ -596,7 +670,12 @@ class LocationTrackingService {
   Stream<RouteTable?> streamRouteFromTable(String routeId) {
     return _routeTablesRef.child(routeId).onValue.map((event) {
       if (event.snapshot.exists) {
-        return RouteTable.fromJson(routeId, Map<String, dynamic>.from(event.snapshot.value as Map<dynamic, dynamic>));
+        return RouteTable.fromJson(
+          routeId,
+          Map<String, dynamic>.from(
+            event.snapshot.value as Map<dynamic, dynamic>,
+          ),
+        );
       }
       return null;
     });
@@ -621,7 +700,9 @@ class LocationTrackingService {
 
   /// Get all students subscribed to a specific route
   /// Useful for broadcasting route updates to all students
-  Future<List<StudentBusAssignment>> getStudentsSubscribedToRoute(String routeId) async {
+  Future<List<StudentBusAssignment>> getStudentsSubscribedToRoute(
+    String routeId,
+  ) async {
     return await getStudentAssignmentsByRoute(routeId);
   }
 

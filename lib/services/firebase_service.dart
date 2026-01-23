@@ -24,10 +24,8 @@ class FirebaseService {
   }) async {
     try {
       // Create user in Firebase Auth
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(email: email, password: password);
 
       // Store user details in Firestore
       await _firestore.collection('users').doc(userCredential.user!.uid).set({
@@ -98,7 +96,7 @@ class FirebaseService {
   }
 
   // Bus-related methods
-  
+
   // Get all buses assigned to a student
   Future<List<BusModel>> getBusesForStudent(String studentId) async {
     try {
@@ -168,7 +166,7 @@ class FirebaseService {
   Future<void> assignStudentToBus(String busId, String studentId) async {
     try {
       await _firestore.collection('buses').doc(busId).update({
-        'assignedStudents': FieldValue.arrayUnion([studentId])
+        'assignedStudents': FieldValue.arrayUnion([studentId]),
       });
     } catch (e) {
       print('Error assigning student to bus: $e');
@@ -180,7 +178,7 @@ class FirebaseService {
   Future<void> removeStudentFromBus(String busId, String studentId) async {
     try {
       await _firestore.collection('buses').doc(busId).update({
-        'assignedStudents': FieldValue.arrayRemove([studentId])
+        'assignedStudents': FieldValue.arrayRemove([studentId]),
       });
     } catch (e) {
       print('Error removing student from bus: $e');
@@ -208,7 +206,8 @@ class FirebaseService {
       }).toList();
     } catch (e) {
       // If index error, fallback to fetching all users and filtering
-      if (e.toString().contains('index') || e.toString().contains('requires an index')) {
+      if (e.toString().contains('index') ||
+          e.toString().contains('requires an index')) {
         try {
           QuerySnapshot allUsers = await _firestore.collection('users').get();
           return allUsers.docs
@@ -288,7 +287,9 @@ class FirebaseService {
       } else {
         // Add new bus
         busData['createdAt'] = FieldValue.serverTimestamp();
-        DocumentReference docRef = await _firestore.collection('buses').add(busData);
+        DocumentReference docRef = await _firestore
+            .collection('buses')
+            .add(busData);
         print('Bus added successfully: ${docRef.id}');
         return docRef.id;
       }
@@ -423,12 +424,21 @@ class FirebaseService {
   }
 
   // Calculate distance between two coordinates (Haversine formula)
-  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+  double _calculateDistance(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
     const double R = 6371; // Earth's radius in km
     final double dLat = _toRadians(lat2 - lat1);
     final double dLon = _toRadians(lon2 - lon1);
-    final double a = (sin(dLat / 2) * sin(dLat / 2)) +
-        (cos(_toRadians(lat1)) * cos(_toRadians(lat2)) * sin(dLon / 2) * sin(dLon / 2));
+    final double a =
+        (sin(dLat / 2) * sin(dLat / 2)) +
+        (cos(_toRadians(lat1)) *
+            cos(_toRadians(lat2)) *
+            sin(dLon / 2) *
+            sin(dLon / 2));
     final double c = 2 * asin(sqrt(a));
     return R * c;
   }
@@ -450,7 +460,8 @@ class FirebaseService {
     required double arrivalLongitude,
     required String departureTime,
     required String arrivalTime,
-    required List<Map<String, dynamic>> waypoints, // [{location, lat, lon}, ...]
+    required List<Map<String, dynamic>>
+    waypoints, // [{location, lat, lon}, ...]
     required String routeType, // 'morning' or 'evening'
   }) async {
     try {
@@ -476,7 +487,9 @@ class FirebaseService {
         return routeId;
       } else {
         routeData['createdAt'] = FieldValue.serverTimestamp();
-        DocumentReference docRef = await _firestore.collection('routes').add(routeData);
+        DocumentReference docRef = await _firestore
+            .collection('routes')
+            .add(routeData);
         print('Route created: ${docRef.id}');
         return docRef.id;
       }
@@ -530,7 +543,8 @@ class FirebaseService {
     required String userId,
     required String busNumber,
     required String message,
-    required String notificationType, // 'bus_approaching', 'bus_arrived', 'bus_near'
+    required String
+    notificationType, // 'bus_approaching', 'bus_arrived', 'bus_near'
   }) async {
     try {
       await _firestore.collection('notifications').add({
@@ -558,10 +572,7 @@ class FirebaseService {
           .limit(50)
           .get();
 
-      return query.docs.map((doc) => {
-        'id': doc.id,
-        ...doc.data(),
-      }).toList();
+      return query.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
     } catch (e) {
       print('Error getting notifications: $e');
       return [];
@@ -589,7 +600,12 @@ class FirebaseService {
         final userLocation = userData['homeLocation'] as String?;
 
         if (userLat != null && userLng != null) {
-          final distance = _calculateDistance(busLatitude, busLongitude, userLat, userLng);
+          final distance = _calculateDistance(
+            busLatitude,
+            busLongitude,
+            userLat,
+            userLng,
+          );
 
           // Notify user if bus is very close (arrival)
           if (distance <= radiusKm) {
@@ -605,7 +621,8 @@ class FirebaseService {
             await createNotification(
               userId: userDoc.id,
               busNumber: busNumber,
-              message: 'Bus #$busNumber is approaching. ${distance.toStringAsFixed(1)} km away',
+              message:
+                  'Bus #$busNumber is approaching. ${distance.toStringAsFixed(1)} km away',
               notificationType: 'bus_approaching',
             );
           }
@@ -620,10 +637,7 @@ class FirebaseService {
   Future<List<Map<String, dynamic>>> getAllRoutes() async {
     try {
       final query = await _firestore.collection('routes').get();
-      return query.docs.map((doc) => {
-        'id': doc.id,
-        ...doc.data(),
-      }).toList();
+      return query.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
     } catch (e) {
       print('Error getting routes: $e');
       return [];
@@ -631,7 +645,9 @@ class FirebaseService {
   }
 
   // Get pending notifications for a user (unread)
-  Future<List<Map<String, dynamic>>> getPendingNotifications(String userId) async {
+  Future<List<Map<String, dynamic>>> getPendingNotifications(
+    String userId,
+  ) async {
     try {
       final query = await _firestore
           .collection('notifications')
@@ -640,11 +656,8 @@ class FirebaseService {
           .orderBy('createdAt', descending: true)
           .limit(10)
           .get();
-      
-      return query.docs.map((doc) => {
-        'id': doc.id,
-        ...doc.data(),
-      }).toList();
+
+      return query.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
     } catch (e) {
       print('Error getting notifications: $e');
       return [];
@@ -654,10 +667,9 @@ class FirebaseService {
   // Mark notification as read
   Future<void> markNotificationAsRead(String notificationId) async {
     try {
-      await _firestore
-          .collection('notifications')
-          .doc(notificationId)
-          .update({'read': true});
+      await _firestore.collection('notifications').doc(notificationId).update({
+        'read': true,
+      });
     } catch (e) {
       print('Error marking notification as read: $e');
     }
@@ -673,10 +685,7 @@ class FirebaseService {
 
       return driverDocs.docs.map((doc) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-        return {
-          ...data,
-          'documentId': doc.id,
-        };
+        return {...data, 'documentId': doc.id};
       }).toList();
     } catch (e) {
       print('Error fetching drivers from drivers collection: $e');
@@ -793,7 +802,10 @@ class FirebaseService {
   }) async {
     try {
       // Get current user data to track role changes
-      final currentUserDoc = await _firestore.collection('users').doc(userId).get();
+      final currentUserDoc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .get();
       final currentData = currentUserDoc.data() ?? {};
       final previousRole = currentData['role'] ?? '';
 
@@ -809,7 +821,14 @@ class FirebaseService {
       });
 
       // Trigger driver sync if user role is or was 'driver'
-      await _syncDriverAfterProfileUpdate(userId, firstName, lastName, phone, role, previousRole);
+      await _syncDriverAfterProfileUpdate(
+        userId,
+        firstName,
+        lastName,
+        phone,
+        role,
+        previousRole,
+      );
 
       print('User profile updated: $userId');
     } catch (e) {
@@ -942,4 +961,3 @@ class FirebaseService {
     }
   }
 }
-

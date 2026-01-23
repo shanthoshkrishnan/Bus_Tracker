@@ -17,7 +17,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   bool _isLoading = false;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
+
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
@@ -106,7 +106,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+        backgroundColor: isError
+            ? const Color(0xFFEF4444)
+            : const Color(0xFF10B981),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         margin: const EdgeInsets.all(16),
@@ -128,7 +130,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 40),
-                  
+
                   // Logo
                   Container(
                     width: 80,
@@ -144,7 +146,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // Title
                   Text(
                     'Welcome Back',
@@ -185,11 +187,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     obscureText: _obscurePassword,
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                         color: const Color(0xFF71717A),
                         size: 20,
                       ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -198,9 +203,13 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () => Navigator.of(context).pushNamed('/forgot-password'),
+                      onPressed: () =>
+                          Navigator.of(context).pushNamed('/forgot-password'),
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -236,7 +245,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                                 strokeWidth: 2,
                               ),
                             )
@@ -255,7 +266,12 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                   // Divider
                   Row(
                     children: [
-                      Expanded(child: Divider(color: const Color(0xFFE4E4E7), thickness: 1)),
+                      Expanded(
+                        child: Divider(
+                          color: const Color(0xFFE4E4E7),
+                          thickness: 1,
+                        ),
+                      ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
@@ -267,7 +283,12 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                           ),
                         ),
                       ),
-                      Expanded(child: Divider(color: const Color(0xFFE4E4E7), thickness: 1)),
+                      Expanded(
+                        child: Divider(
+                          color: const Color(0xFFE4E4E7),
+                          thickness: 1,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -283,10 +304,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: _socialButton(
-                          label: 'Apple',
-                          icon: Icons.apple,
-                        ),
+                        child: _socialButton(label: 'Apple', icon: Icons.apple),
                       ),
                     ],
                   ),
@@ -304,7 +322,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                         ),
                       ),
                       TextButton(
-                        onPressed: () => Navigator.of(context).pushNamed('/register'),
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/register'),
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
                           minimumSize: Size.zero,
@@ -375,7 +394,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               prefixIcon: Icon(icon, color: const Color(0xFF71717A), size: 20),
               suffixIcon: suffixIcon,
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
             ),
           ),
         ),
@@ -383,10 +405,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _socialButton({
-    required String label,
-    required IconData icon,
-  }) {
+  Widget _socialButton({required String label, required IconData icon}) {
     return Container(
       height: 52,
       decoration: BoxDecoration(

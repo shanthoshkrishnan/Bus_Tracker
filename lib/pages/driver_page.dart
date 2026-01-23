@@ -220,7 +220,8 @@ class DriverPage extends StatefulWidget {
   State<DriverPage> createState() => _DriverPageState();
 }
 
-class _DriverPageState extends State<DriverPage> with SingleTickerProviderStateMixin {
+class _DriverPageState extends State<DriverPage>
+    with SingleTickerProviderStateMixin {
   final FirebaseService _firebaseService = FirebaseService();
   late Future<Map<String, dynamic>?> _assignedBusFuture;
   late AnimationController _animationController;
@@ -229,7 +230,9 @@ class _DriverPageState extends State<DriverPage> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _assignedBusFuture = _firebaseService.getDriverAssignedBus(widget.driverEmail);
+    _assignedBusFuture = _firebaseService.getDriverAssignedBus(
+      widget.driverEmail,
+    );
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -273,7 +276,9 @@ class _DriverPageState extends State<DriverPage> with SingleTickerProviderStateM
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFF18181B)),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  const Color(0xFF18181B),
+                ),
                 strokeWidth: 2,
               ),
             );
@@ -292,7 +297,11 @@ class _DriverPageState extends State<DriverPage> with SingleTickerProviderStateM
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.error_outline, size: 48, color: const Color(0xFFEF4444)),
+                    Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: const Color(0xFFEF4444),
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Something went wrong',
@@ -306,20 +315,26 @@ class _DriverPageState extends State<DriverPage> with SingleTickerProviderStateM
                     Text(
                       '${snapshot.error}',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: const Color(0xFF71717A), fontSize: 14),
+                      style: TextStyle(
+                        color: const Color(0xFF71717A),
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: () {
                         setState(() {
-                          _assignedBusFuture =
-                              _firebaseService.getDriverAssignedBus(widget.driverEmail);
+                          _assignedBusFuture = _firebaseService
+                              .getDriverAssignedBus(widget.driverEmail);
                         });
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF18181B),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -334,8 +349,10 @@ class _DriverPageState extends State<DriverPage> with SingleTickerProviderStateM
           }
 
           final busData = snapshot.data;
-          final isAssigned = busData != null &&
-              (busData['busNumber'] != null && busData['busNumber'] != 'Not Assigned');
+          final isAssigned =
+              busData != null &&
+              (busData['busNumber'] != null &&
+                  busData['busNumber'] != 'Not Assigned');
 
           return FadeTransition(
             opacity: _fadeAnimation,
@@ -411,7 +428,10 @@ class _DriverPageState extends State<DriverPage> with SingleTickerProviderStateM
                   // Status Badge
                   if (isAssigned)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF0FDF4),
                         borderRadius: BorderRadius.circular(12),
@@ -452,7 +472,10 @@ class _DriverPageState extends State<DriverPage> with SingleTickerProviderStateM
                     )
                   else
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFEF3C7),
                         borderRadius: BorderRadius.circular(12),
@@ -542,7 +565,10 @@ class _DriverPageState extends State<DriverPage> with SingleTickerProviderStateM
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF18181B),
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 14,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -551,7 +577,10 @@ class _DriverPageState extends State<DriverPage> with SingleTickerProviderStateM
                           icon: const Icon(Icons.map_outlined),
                           label: const Text(
                             'View Full Route',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
@@ -667,16 +696,14 @@ class _RouteDetailsModal extends StatefulWidget {
   final String busNumber;
   final String busRoute;
 
-  const _RouteDetailsModal({
-    required this.busNumber,
-    required this.busRoute,
-  });
+  const _RouteDetailsModal({required this.busNumber, required this.busRoute});
 
   @override
   State<_RouteDetailsModal> createState() => _RouteDetailsModalState();
 }
 
-class _RouteDetailsModalState extends State<_RouteDetailsModal> with SingleTickerProviderStateMixin {
+class _RouteDetailsModalState extends State<_RouteDetailsModal>
+    with SingleTickerProviderStateMixin {
   GoogleMapController? _mapController;
   bool _showFullMap = false;
   late List<Map<String, dynamic>> _currentStops;
@@ -688,7 +715,7 @@ class _RouteDetailsModalState extends State<_RouteDetailsModal> with SingleTicke
     super.initState();
     final now = DateTime.now();
     _currentStops = now.hour < 12 ? morningStops : eveningStops;
-    
+
     // Initialize first stop position
     try {
       final firstStop = _currentStops[0];
@@ -699,7 +726,7 @@ class _RouteDetailsModalState extends State<_RouteDetailsModal> with SingleTicke
     } catch (e) {
       _firstStopLocation = const LatLng(12.6069, 80.0588);
     }
-    
+
     _animationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
@@ -716,7 +743,7 @@ class _RouteDetailsModalState extends State<_RouteDetailsModal> with SingleTicke
 
   Set<Marker> _buildMapMarkers() {
     Set<Marker> markers = {};
-    
+
     // Add markers for all stops (red for others, green for first)
     for (int i = 0; i < _currentStops.length; i++) {
       final stop = _currentStops[i];
@@ -731,17 +758,19 @@ class _RouteDetailsModalState extends State<_RouteDetailsModal> with SingleTicke
             title: stop['name'],
             snippet: '${stop['time']} - ${stop['distance']} km',
           ),
-          icon: i == 0 ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen) : BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          icon: i == 0
+              ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen)
+              : BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
         ),
       );
     }
-    
+
     return markers;
   }
 
   Set<Polyline> _buildPolylines() {
     Set<Polyline> polylines = {};
-    
+
     List<LatLng> polylinePoints = [];
     for (var stop in _currentStops) {
       polylinePoints.add(
@@ -759,13 +788,13 @@ class _RouteDetailsModalState extends State<_RouteDetailsModal> with SingleTicke
 
       final current = polylinePoints[i];
       final next = polylinePoints[i + 1];
-      
+
       // Add 4 intermediate points between each stop for smooth curves
       for (int j = 1; j <= 4; j++) {
         final latDiff = next.latitude - current.latitude;
         final lonDiff = next.longitude - current.longitude;
         final curveOffset = 0.0008 * (2 - (j / 4).abs() * 2);
-        
+
         smoothedPoints.add(
           LatLng(
             current.latitude + latDiff * (j / 5) + curveOffset,
@@ -876,7 +905,10 @@ class _RouteDetailsModalState extends State<_RouteDetailsModal> with SingleTicke
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF18181B),
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
                               ),
                               icon: const Icon(Icons.map, size: 16),
                               label: const Text('Expand'),
@@ -907,7 +939,7 @@ class _RouteDetailsModalState extends State<_RouteDetailsModal> with SingleTicke
                             final stop = _currentStops[index];
                             final isFirst = index == 0;
                             final isLast = index == _currentStops.length - 1;
-                            
+
                             return Column(
                               children: [
                                 Row(
@@ -919,8 +951,12 @@ class _RouteDetailsModalState extends State<_RouteDetailsModal> with SingleTicke
                                           width: 32,
                                           height: 32,
                                           decoration: BoxDecoration(
-                                            color: isFirst ? const Color(0xFF10B981) : const Color(0xFF18181B),
-                                            borderRadius: BorderRadius.circular(8),
+                                            color: isFirst
+                                                ? const Color(0xFF10B981)
+                                                : const Color(0xFF18181B),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                             border: Border.all(
                                               color: const Color(0xFFE4E4E7),
                                               width: 2,
@@ -942,7 +978,9 @@ class _RouteDetailsModalState extends State<_RouteDetailsModal> with SingleTicke
                                             width: 2,
                                             height: 60,
                                             color: const Color(0xFFE4E4E7),
-                                            margin: const EdgeInsets.only(top: 8),
+                                            margin: const EdgeInsets.only(
+                                              top: 8,
+                                            ),
                                           ),
                                       ],
                                     ),
@@ -954,7 +992,8 @@ class _RouteDetailsModalState extends State<_RouteDetailsModal> with SingleTicke
                                           bottom: isLast ? 0 : 60,
                                         ),
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               stop['name'],
@@ -967,23 +1006,39 @@ class _RouteDetailsModalState extends State<_RouteDetailsModal> with SingleTicke
                                             const SizedBox(height: 4),
                                             Row(
                                               children: [
-                                                Icon(Icons.schedule, size: 14, color: const Color(0xFF71717A)),
+                                                Icon(
+                                                  Icons.schedule,
+                                                  size: 14,
+                                                  color: const Color(
+                                                    0xFF71717A,
+                                                  ),
+                                                ),
                                                 const SizedBox(width: 6),
                                                 Text(
                                                   stop['time'],
                                                   style: TextStyle(
                                                     fontSize: 12,
-                                                    color: const Color(0xFF71717A),
+                                                    color: const Color(
+                                                      0xFF71717A,
+                                                    ),
                                                   ),
                                                 ),
                                                 const SizedBox(width: 16),
-                                                Icon(Icons.location_on, size: 14, color: const Color(0xFF71717A)),
+                                                Icon(
+                                                  Icons.location_on,
+                                                  size: 14,
+                                                  color: const Color(
+                                                    0xFF71717A,
+                                                  ),
+                                                ),
                                                 const SizedBox(width: 6),
                                                 Text(
                                                   '${stop['distance']} km',
                                                   style: TextStyle(
                                                     fontSize: 12,
-                                                    color: const Color(0xFF71717A),
+                                                    color: const Color(
+                                                      0xFF71717A,
+                                                    ),
                                                   ),
                                                 ),
                                               ],

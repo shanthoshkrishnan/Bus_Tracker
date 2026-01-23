@@ -115,7 +115,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFFE4E4E7), width: 1.5),
+                        border: Border.all(
+                          color: const Color(0xFFE4E4E7),
+                          width: 1.5,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: TextField(
@@ -165,7 +168,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                               strokeWidth: 2,
                             ),
                           )
@@ -214,7 +219,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 ),
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFAFAFA),
                     borderRadius: BorderRadius.circular(8),

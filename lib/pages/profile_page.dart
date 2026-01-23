@@ -35,7 +35,9 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    print('ProfilePage initiated with userId: ${widget.userId}, role: ${widget.userRole}');
+    print(
+      'ProfilePage initiated with userId: ${widget.userId}, role: ${widget.userRole}',
+    );
     if (widget.userId.isEmpty) {
       print('WARNING: userId is empty!');
     }
@@ -61,7 +63,7 @@ class _ProfilePageState extends State<ProfilePage> {
       }
 
       print('Fetching user data for userId: ${widget.userId}');
-      
+
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.userId)
@@ -88,10 +90,12 @@ class _ProfilePageState extends State<ProfilePage> {
   Map<String, bool> _checkProfileCompletion(Map<String, dynamic> userData) {
     final role = widget.userRole.toLowerCase();
     final completion = {
-      'personalInfo': userData['firstName']?.isNotEmpty == true &&
+      'personalInfo':
+          userData['firstName']?.isNotEmpty == true &&
           userData['lastName']?.isNotEmpty == true &&
           userData['email']?.isNotEmpty == true,
-      'contactInfo': userData['age'] != null && userData['dob']?.isNotEmpty == true,
+      'contactInfo':
+          userData['age'] != null && userData['dob']?.isNotEmpty == true,
       'address': userData['address']?.isNotEmpty == true,
       'gender': userData['gender']?.isNotEmpty == true,
       'studentDetails': true, // Default true for non-students
@@ -100,7 +104,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     // Check student-specific details
     if (role == 'student') {
-      completion['studentDetails'] = 
+      completion['studentDetails'] =
           userData['year']?.isNotEmpty == true &&
           userData['department']?.isNotEmpty == true;
     }
@@ -128,7 +132,9 @@ class _ProfilePageState extends State<ProfilePage> {
       final currentData = userDoc.data() ?? {};
 
       // Get current role for change detection
-      final currentRole = (currentData['role'] ?? 'student').toString().toLowerCase();
+      final currentRole = (currentData['role'] ?? 'student')
+          .toString()
+          .toLowerCase();
 
       // Prepare additional data beyond what updateUserProfile handles
       final additionalData = {
@@ -137,7 +143,8 @@ class _ProfilePageState extends State<ProfilePage> {
       };
 
       // Add home location if student and not empty
-      if (widget.userRole.toLowerCase() == 'student' && _homeLocationController.text.isNotEmpty) {
+      if (widget.userRole.toLowerCase() == 'student' &&
+          _homeLocationController.text.isNotEmpty) {
         additionalData['homeLocation'] = _homeLocationController.text.trim();
       }
 
@@ -147,7 +154,8 @@ class _ProfilePageState extends State<ProfilePage> {
         if (position != null) {
           additionalData['lastKnownLatitude'] = position.latitude.toString();
           additionalData['lastKnownLongitude'] = position.longitude.toString();
-          additionalData['lastLocationUpdate'] = DateTime.now().toIso8601String();
+          additionalData['lastLocationUpdate'] = DateTime.now()
+              .toIso8601String();
         }
       } catch (e) {
         print('Could not capture location: $e');
@@ -186,9 +194,9 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating profile: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error updating profile: $e')));
       }
       print('Profile update error: $e');
     }
@@ -247,17 +255,16 @@ class _ProfilePageState extends State<ProfilePage> {
                 await FirebaseService().signOut();
                 // Navigate back to login page and clear navigation stack
                 if (context.mounted) {
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    '/',
-                    (route) => false,
-                  );
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil('/', (route) => false);
                 }
               } catch (e) {
                 print('Error during logout: $e');
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Logout error: $e')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Logout error: $e')));
                 }
               }
             },
@@ -288,9 +295,7 @@ class _ProfilePageState extends State<ProfilePage> {
         future: _userDataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
@@ -298,7 +303,11 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, size: 64, color: Color(0xFFEF4444)),
+                  const Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Color(0xFFEF4444),
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Error: ${snapshot.error}',
@@ -313,7 +322,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF18181B),
                     ),
-                    child: const Text('Retry', style: TextStyle(color: Colors.white)),
+                    child: const Text(
+                      'Retry',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ],
               ),
@@ -321,16 +333,17 @@ class _ProfilePageState extends State<ProfilePage> {
           }
 
           if (!snapshot.hasData) {
-            return const Center(
-              child: Text('No user data found'),
-            );
+            return const Center(child: Text('No user data found'));
           }
 
           final userData = snapshot.data!;
           final completion = _checkProfileCompletion(userData);
           final percentage = _getCompletionPercentage(completion);
           final isComplete = percentage == 100;
-          final displayName = widget.userName ?? '${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}'.trim();
+          final displayName =
+              widget.userName ??
+              '${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}'
+                  .trim();
           final displayEmail = widget.userEmail ?? userData['email'] ?? 'N/A';
 
           return SingleChildScrollView(
@@ -371,7 +384,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFAFAFA),
                           borderRadius: BorderRadius.circular(8),
@@ -408,7 +424,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFC107).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFFFC107), width: 1.5),
+                      border: Border.all(
+                        color: const Color(0xFFFFC107),
+                        width: 1.5,
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -440,8 +459,12 @@ class _ProfilePageState extends State<ProfilePage> {
                           child: LinearProgressIndicator(
                             value: percentage / 100,
                             minHeight: 8,
-                            backgroundColor: const Color(0xFFFFC107).withOpacity(0.2),
-                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFC107)),
+                            backgroundColor: const Color(
+                              0xFFFFC107,
+                            ).withOpacity(0.2),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              Color(0xFFFFC107),
+                            ),
                           ),
                         ),
                       ],
@@ -479,7 +502,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 20),
 
                 // Student-specific section (if in edit mode)
-                if (widget.userRole.toLowerCase() == 'student' && _isEditMode) ...[
+                if (widget.userRole.toLowerCase() == 'student' &&
+                    _isEditMode) ...[
                   _buildEditSection(userData),
                   const SizedBox(height: 20),
                 ],
@@ -565,10 +589,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildSection({
-    required String title,
-    required List<Widget> items,
-  }) {
+  Widget _buildSection({required String title, required List<Widget> items}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -626,11 +647,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: const Color(0xFFFAFAFA),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  icon,
-                  color: const Color(0xFF18181B),
-                  size: 20,
-                ),
+                child: Icon(icon, color: const Color(0xFF18181B), size: 20),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -694,7 +711,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Color(0xFFE4E4E7)),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -717,7 +737,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Color(0xFFE4E4E7)),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -741,7 +764,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Color(0xFFE4E4E7)),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -784,5 +810,4 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
-
 }

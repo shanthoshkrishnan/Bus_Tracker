@@ -12,7 +12,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Load environment variables first
   try {
     await dotenv.load(fileName: '.env');
@@ -20,7 +20,7 @@ void main() async {
   } catch (e) {
     print('⚠️ Warning: Could not load .env file: $e');
   }
-  
+
   // Initialize Firebase only once
   try {
     // Check if Firebase is already initialized
@@ -35,13 +35,15 @@ void main() async {
   } catch (e) {
     // Handle both initialization errors and duplicate app errors
     if (e.toString().contains('[core/duplicate-app]')) {
-      print('ℹ️ Firebase already initialized (duplicate app detected), using existing instance');
+      print(
+        'ℹ️ Firebase already initialized (duplicate app detected), using existing instance',
+      );
     } else {
       print('❌ Firebase initialization error: $e');
     }
     // Don't rethrow - allow app to continue with cached Firebase instance
   }
-  
+
   runApp(const MyApp());
 }
 
@@ -89,7 +91,7 @@ class _AppInitializerState extends State<_AppInitializer> {
     try {
       // Request location permission on app startup
       await _requestLocationPermission();
-      
+
       // Check if user is logged in
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
@@ -113,10 +115,10 @@ class _AppInitializerState extends State<_AppInitializer> {
   Future<bool> _requestLocationPermission() async {
     try {
       final status = await Geolocator.checkPermission();
-      
+
       if (status == LocationPermission.denied) {
         final result = await Geolocator.requestPermission();
-        
+
         if (result == LocationPermission.denied) {
           _showLocationPermissionDialog(true);
           return false;
@@ -124,14 +126,14 @@ class _AppInitializerState extends State<_AppInitializer> {
           _showLocationPermissionDialog(false);
           return false;
         }
-        
+
         print('✅ Location permission granted');
         return true;
       } else if (status == LocationPermission.deniedForever) {
         _showLocationPermissionDialog(false);
         return false;
       }
-      
+
       print('✅ Location permission already granted');
       return true;
     } catch (e) {
@@ -240,10 +242,7 @@ class _AppInitializerState extends State<_AppInitializer> {
               SizedBox(height: 16),
               Text(
                 'Initializing Bus Tracker...',
-                style: TextStyle(
-                  color: Color(0xFF71717A),
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Color(0xFF71717A), fontSize: 14),
               ),
             ],
           ),

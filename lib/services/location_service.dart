@@ -30,7 +30,7 @@ class LocationService {
   Future<bool> requestLocationPermission() async {
     try {
       print('📍 Checking location permission...');
-      
+
       // First check if location services are enabled
       bool serviceEnabled = await isLocationServiceEnabled();
       if (!serviceEnabled) {
@@ -41,23 +41,28 @@ class LocationService {
 
       LocationPermission permission = await Geolocator.checkPermission();
       print('Current permission: $permission');
-      
+
       if (permission == LocationPermission.denied) {
         print('📍 Permission denied. Requesting...');
         permission = await Geolocator.requestPermission();
         print('Permission after request: $permission');
       }
-      
+
       if (permission == LocationPermission.deniedForever) {
         print('❌ Permission permanently denied. Opening app settings...');
         await Geolocator.openAppSettings();
         return false;
       }
-      
-      final hasPermission = permission == LocationPermission.whileInUse ||
+
+      final hasPermission =
+          permission == LocationPermission.whileInUse ||
           permission == LocationPermission.always;
-      
-      print(hasPermission ? '✅ Location permission granted' : '❌ Permission not granted');
+
+      print(
+        hasPermission
+            ? '✅ Location permission granted'
+            : '❌ Permission not granted',
+      );
       return hasPermission;
     } catch (e) {
       print('Error requesting location permission: $e');
@@ -66,10 +71,12 @@ class LocationService {
   }
 
   // Get current location with timeout and fallback
-  Future<LatLng?> getCurrentLocation({Duration timeout = const Duration(seconds: 10)}) async {
+  Future<LatLng?> getCurrentLocation({
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
     try {
       print('📍 Getting current location...');
-      
+
       bool hasPermission = await requestLocationPermission();
       if (!hasPermission) {
         print('❌ Location permission denied');
@@ -78,18 +85,23 @@ class LocationService {
 
       // Get position with timeout
       try {
-        final position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-          timeLimit: timeout,
-        ).timeout(
-          timeout,
-          onTimeout: () {
-            print('⚠️ Location request timed out, retrying with lower accuracy...');
-            throw TimeoutException('Location request timed out');
-          },
-        );
+        final position =
+            await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.high,
+              timeLimit: timeout,
+            ).timeout(
+              timeout,
+              onTimeout: () {
+                print(
+                  '⚠️ Location request timed out, retrying with lower accuracy...',
+                );
+                throw TimeoutException('Location request timed out');
+              },
+            );
 
-        print('✅ Location obtained: ${position.latitude}, ${position.longitude}');
+        print(
+          '✅ Location obtained: ${position.latitude}, ${position.longitude}',
+        );
         return LatLng(position.latitude, position.longitude);
       } on TimeoutException {
         // Retry with medium accuracy
@@ -98,14 +110,16 @@ class LocationService {
           desiredAccuracy: LocationAccuracy.medium,
           timeLimit: const Duration(seconds: 5),
         );
-        
-        print('✅ Location obtained (medium accuracy): ${position.latitude}, ${position.longitude}');
+
+        print(
+          '✅ Location obtained (medium accuracy): ${position.latitude}, ${position.longitude}',
+        );
         return LatLng(position.latitude, position.longitude);
       }
     } catch (e) {
       print('❌ Error getting location: $e');
       print('Error type: ${e.runtimeType}');
-      
+
       // Last resort: return default location (San Francisco)
       print('⚠️ Using default location as fallback');
       return LatLng(37.7749, -122.4194);
@@ -117,36 +131,44 @@ class LocationService {
     LocationAccuracy accuracy = LocationAccuracy.high,
     int distanceFilter = 10,
   }) {
-    print('📍 Starting location stream with accuracy: $accuracy, distance filter: ${distanceFilter}m');
-    
+    print(
+      '📍 Starting location stream with accuracy: $accuracy, distance filter: ${distanceFilter}m',
+    );
+
     return Geolocator.getPositionStream(
-      locationSettings: LocationSettings(
-        accuracy: accuracy,
-        distanceFilter: distanceFilter,
-        timeLimit: const Duration(seconds: 5),
-      ),
-    ).map((Position position) {
-      print('📍 Location update: ${position.latitude}, ${position.longitude} (accuracy: ${position.accuracy}m)');
-      return LatLng(position.latitude, position.longitude);
-    }).handleError((error, stackTrace) {
-      print('❌ Location stream error: $error');
-      print('Stack trace: $stackTrace');
-      // Error handled but stream continues
-      return null;
-    });
+          locationSettings: LocationSettings(
+            accuracy: accuracy,
+            distanceFilter: distanceFilter,
+            timeLimit: const Duration(seconds: 5),
+          ),
+        )
+        .map((Position position) {
+          print(
+            '📍 Location update: ${position.latitude}, ${position.longitude} (accuracy: ${position.accuracy}m)',
+          );
+          return LatLng(position.latitude, position.longitude);
+        })
+        .handleError((error, stackTrace) {
+          print('❌ Location stream error: $error');
+          print('Stack trace: $stackTrace');
+          // Error handled but stream continues
+          return null;
+        });
   }
 
   // Get last known location (faster, less accurate)
   Future<LatLng?> getLastKnownLocation() async {
     try {
       print('📍 Getting last known location...');
-      
+
       final position = await Geolocator.getLastKnownPosition();
       if (position != null) {
-        print('✅ Last known location: ${position.latitude}, ${position.longitude}');
+        print(
+          '✅ Last known location: ${position.latitude}, ${position.longitude}',
+        );
         return LatLng(position.latitude, position.longitude);
       }
-      
+
       print('⚠️ No last known location available');
       return null;
     } catch (e) {

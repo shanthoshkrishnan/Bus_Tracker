@@ -5,10 +5,7 @@ import '../services/firebase_service.dart';
 class BusManagementPage extends StatefulWidget {
   final String? busId;
 
-  const BusManagementPage({
-    super.key,
-    this.busId,
-  });
+  const BusManagementPage({super.key, this.busId});
 
   @override
   State<BusManagementPage> createState() => _BusManagementPageState();
@@ -70,9 +67,9 @@ class _BusManagementPageState extends State<BusManagementPage> {
       } catch (e) {
         print('Error loading bus data: $e');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error loading bus: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error loading bus: $e')));
         }
       }
     }
@@ -136,9 +133,13 @@ class _BusManagementPageState extends State<BusManagementPage> {
     }
 
     // Check for duplicate bus number
-    final busNumberExists = await _isBusNumberExists(_busNumberController.text.trim());
+    final busNumberExists = await _isBusNumberExists(
+      _busNumberController.text.trim(),
+    );
     if (busNumberExists) {
-      _showErrorDialog('Bus number ${_busNumberController.text.trim()} already exists. Please use a different number.');
+      _showErrorDialog(
+        'Bus number ${_busNumberController.text.trim()} already exists. Please use a different number.',
+      );
       return;
     }
 
@@ -201,7 +202,9 @@ class _BusManagementPageState extends State<BusManagementPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              _isEditMode ? 'Bus updated successfully!' : 'Bus created successfully!',
+              _isEditMode
+                  ? 'Bus updated successfully!'
+                  : 'Bus created successfully!',
             ),
             backgroundColor: const Color(0xFF10B981),
           ),
@@ -278,7 +281,10 @@ class _BusManagementPageState extends State<BusManagementPage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_circle_outline, color: Color(0xFF18181B)),
+            icon: const Icon(
+              Icons.add_circle_outline,
+              color: Color(0xFF18181B),
+            ),
             onPressed: () {
               Navigator.push(
                 context,
@@ -296,7 +302,9 @@ class _BusManagementPageState extends State<BusManagementPage> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFF18181B)),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  const Color(0xFF18181B),
+                ),
                 strokeWidth: 2,
               ),
             );
@@ -315,7 +323,11 @@ class _BusManagementPageState extends State<BusManagementPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.error_outline, size: 48, color: const Color(0xFFEF4444)),
+                    Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: const Color(0xFFEF4444),
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Error loading buses',
@@ -329,7 +341,10 @@ class _BusManagementPageState extends State<BusManagementPage> {
                     Text(
                       '${snapshot.error}',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: const Color(0xFF71717A), fontSize: 14),
+                      style: TextStyle(
+                        color: const Color(0xFF71717A),
+                        fontSize: 14,
+                      ),
                     ),
                   ],
                 ),
@@ -409,7 +424,8 @@ class _BusManagementPageState extends State<BusManagementPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => BusManagementPage(busId: bus.id),
+                          builder: (context) =>
+                              BusManagementPage(busId: bus.id),
                         ),
                       ).then((_) => setState(() {}));
                     },
@@ -455,7 +471,10 @@ class _BusManagementPageState extends State<BusManagementPage> {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
                             decoration: BoxDecoration(
                               color: bus.status == 'active'
                                   ? const Color(0xFFF0FDF4)
@@ -501,18 +520,14 @@ class _BusManagementPageState extends State<BusManagementPage> {
   void _navigateToCreateBus() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const BusManagementPage(),
-      ),
+      MaterialPageRoute(builder: (context) => const BusManagementPage()),
     ).then((_) => setState(() {}));
   }
 
   void _navigateToEditBus(String busId) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => BusManagementPage(busId: busId),
-      ),
+      MaterialPageRoute(builder: (context) => BusManagementPage(busId: busId)),
     ).then((_) => setState(() {}));
   }
 
@@ -527,9 +542,9 @@ class _BusManagementPageState extends State<BusManagementPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -592,7 +607,9 @@ class _BusManagementPageState extends State<BusManagementPage> {
                     controller: _departureLatController,
                     hintText: '13.0827',
                     icon: Icons.my_location,
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -602,7 +619,9 @@ class _BusManagementPageState extends State<BusManagementPage> {
                     controller: _departureLonController,
                     hintText: '80.2707',
                     icon: Icons.my_location,
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                   ),
                 ),
               ],
@@ -623,7 +642,9 @@ class _BusManagementPageState extends State<BusManagementPage> {
                     controller: _arrivalLatController,
                     hintText: '13.0827',
                     icon: Icons.flag,
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -633,7 +654,9 @@ class _BusManagementPageState extends State<BusManagementPage> {
                     controller: _arrivalLonController,
                     hintText: '80.2707',
                     icon: Icons.flag,
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                   ),
                 ),
               ],
@@ -750,10 +773,7 @@ class _BusManagementPageState extends State<BusManagementPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: const Color(0xFFE4E4E7),
-                  width: 1.5,
-                ),
+                border: Border.all(color: const Color(0xFFE4E4E7), width: 1.5),
                 borderRadius: BorderRadius.circular(12),
                 color: Colors.white,
               ),
@@ -770,8 +790,8 @@ class _BusManagementPageState extends State<BusManagementPage> {
                         color: status == 'active'
                             ? const Color(0xFF16A34A)
                             : status == 'inactive'
-                                ? const Color(0xFFCA8A04)
-                                : const Color(0xFFEF4444),
+                            ? const Color(0xFFCA8A04)
+                            : const Color(0xFFEF4444),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -804,8 +824,9 @@ class _BusManagementPageState extends State<BusManagementPage> {
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                           strokeWidth: 2,
                         ),
                       )
@@ -884,12 +905,11 @@ class _BusManagementPageState extends State<BusManagementPage> {
               filled: true,
               fillColor: Colors.white,
               border: InputBorder.none,
-              prefixIcon: Icon(
-                icon,
-                color: const Color(0xFF71717A),
-                size: 20,
+              prefixIcon: Icon(icon, color: const Color(0xFF71717A), size: 20),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
           ),
         ),

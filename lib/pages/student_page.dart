@@ -229,7 +229,7 @@ class StudentPage extends StatefulWidget {
 
 class _StudentPageState extends State<StudentPage> {
   final FirebaseService _firebaseService = FirebaseService();
-  
+
   late Future<List<dynamic>> _busesFuture;
   String _userId = '';
   late String _userName;
@@ -314,7 +314,9 @@ class _StudentPageState extends State<StudentPage> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFF18181B)),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  const Color(0xFF18181B),
+                ),
                 strokeWidth: 2,
               ),
             );
@@ -333,7 +335,11 @@ class _StudentPageState extends State<StudentPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.error_outline, size: 48, color: const Color(0xFFEF4444)),
+                    Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: const Color(0xFFEF4444),
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Something went wrong',
@@ -347,7 +353,10 @@ class _StudentPageState extends State<StudentPage> {
                     Text(
                       '${snapshot.error}',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: const Color(0xFF71717A), fontSize: 14),
+                      style: TextStyle(
+                        color: const Color(0xFF71717A),
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
@@ -447,7 +456,7 @@ class _StudentPageState extends State<StudentPage> {
     String busRoute = bus.busRoute ?? 'Route 68 Chengalpet';
     String driverName = bus.driverName ?? 'Driver';
     String status = bus.status ?? 'inactive';
-    
+
     return GestureDetector(
       onTap: () => _showBusDetailsModal(context, bus),
       child: Container(
@@ -500,9 +509,14 @@ class _StudentPageState extends State<StudentPage> {
                 ),
                 const SizedBox(width: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: status == 'active' ? const Color(0xFFDCFCE7) : const Color(0xFFFEF3C7),
+                    color: status == 'active'
+                        ? const Color(0xFFDCFCE7)
+                        : const Color(0xFFFEF3C7),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -510,18 +524,24 @@ class _StudentPageState extends State<StudentPage> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: status == 'active' ? const Color(0xFF16A34A) : const Color(0xFFB45309),
+                      color: status == 'active'
+                          ? const Color(0xFF16A34A)
+                          : const Color(0xFFB45309),
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            
+
             // Driver info
             Row(
               children: [
-                Icon(Icons.person_outline, size: 18, color: const Color(0xFF71717A)),
+                Icon(
+                  Icons.person_outline,
+                  size: 18,
+                  color: const Color(0xFF71717A),
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -536,7 +556,7 @@ class _StudentPageState extends State<StudentPage> {
               ],
             ),
             const SizedBox(height: 12),
-            
+
             // Tap for details
             Container(
               width: double.infinity,
@@ -548,7 +568,11 @@ class _StudentPageState extends State<StudentPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.my_location, size: 16, color: const Color(0xFF18181B)),
+                  Icon(
+                    Icons.my_location,
+                    size: 16,
+                    color: const Color(0xFF18181B),
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'View Live Location',
@@ -577,7 +601,8 @@ class _BusDetailsModal extends StatefulWidget {
   State<_BusDetailsModal> createState() => _BusDetailsModalState();
 }
 
-class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerProviderStateMixin {
+class _BusDetailsModalState extends State<_BusDetailsModal>
+    with SingleTickerProviderStateMixin {
   GoogleMapController? _mapController;
   bool _showFullMap = false;
   List<Map<String, dynamic>> _currentStops = morningStops;
@@ -593,18 +618,18 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
     super.initState();
     final now = DateTime.now();
     _currentStops = now.hour < 12 ? morningStops : eveningStops;
-    
+
     _animationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     );
-    
+
     // Initialize with first stop as default
     _currentBusLocation = LatLng(
       _currentStops[0]['latitude'] as double,
       _currentStops[0]['longitude'] as double,
     );
-    
+
     // Fetch user's actual GPS location
     _fetchUserLocation();
     _startLiveLocationUpdate();
@@ -617,15 +642,12 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
       if (position != null) {
         setState(() {
           _userLocation = LatLng(position.latitude, position.longitude);
-          
+
           // Animate camera to user's location
           if (_mapController != null) {
             _mapController?.animateCamera(
               CameraUpdate.newCameraPosition(
-                CameraPosition(
-                  target: _userLocation,
-                  zoom: 15,
-                ),
+                CameraPosition(target: _userLocation, zoom: 15),
               ),
             );
           }
@@ -655,10 +677,12 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
   void _updateBusLocation() {
     final now = DateTime.now();
     final currentMinutes = now.hour * 60 + now.minute;
-    
+
     final firstStopTime = _timeStringToMinutes(_currentStops[0]['time']);
-    final lastStopTime = _timeStringToMinutes(_currentStops[_currentStops.length - 1]['time']);
-    
+    final lastStopTime = _timeStringToMinutes(
+      _currentStops[_currentStops.length - 1]['time'],
+    );
+
     // If before first stop, show at first stop
     if (currentMinutes < firstStopTime) {
       _nextStopIndex = 0;
@@ -680,13 +704,13 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
       for (int i = 0; i < _currentStops.length - 1; i++) {
         final stop1 = _currentStops[i];
         final stop2 = _currentStops[i + 1];
-        
+
         final time1 = _timeStringToMinutes(stop1['time']);
         final time2 = _timeStringToMinutes(stop2['time']);
-        
+
         if (currentMinutes >= time1 && currentMinutes < time2) {
           _nextStopIndex = i + 1;
-          
+
           // Interpolate location between two stops
           final progress = (currentMinutes - time1) / (time2 - time1);
           final lat1Double = stop1['latitude'] as double;
@@ -695,21 +719,18 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
           final lng2Double = stop2['longitude'] as double;
           final lat = lat1Double + (lat2Double - lat1Double) * progress;
           final lng = lng1Double + (lng2Double - lng1Double) * progress;
-          
+
           _currentBusLocation = LatLng(lat, lng);
           break;
         }
       }
     }
-    
+
     // Always animate camera to follow current bus location
     if (_mapController != null) {
       _mapController?.animateCamera(
         CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: _currentBusLocation,
-            zoom: 14,
-          ),
+          CameraPosition(target: _currentBusLocation, zoom: 14),
         ),
       );
     }
@@ -872,7 +893,10 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF18181B),
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
                               ),
                               icon: Icon(Icons.map, size: 16),
                               label: const Text('Map'),
@@ -881,7 +905,7 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
                         ),
                       ),
                       const SizedBox(height: 20),
-                      
+
                       // Driver info
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -897,7 +921,11 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.person, size: 20, color: const Color(0xFF18181B)),
+                                  Icon(
+                                    Icons.person,
+                                    size: 20,
+                                    color: const Color(0xFF18181B),
+                                  ),
                                   const SizedBox(width: 12),
                                   Text(
                                     'Driver: ${widget.bus.driverName ?? 'N/A'}',
@@ -912,7 +940,11 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
                               const SizedBox(height: 12),
                               Row(
                                 children: [
-                                  Icon(Icons.phone, size: 20, color: const Color(0xFF18181B)),
+                                  Icon(
+                                    Icons.phone,
+                                    size: 20,
+                                    color: const Color(0xFF18181B),
+                                  ),
                                   const SizedBox(width: 12),
                                   Text(
                                     'Phone: ${widget.bus.driverPhone ?? 'N/A'}',
@@ -926,7 +958,11 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
                               const SizedBox(height: 12),
                               Row(
                                 children: [
-                                  Icon(Icons.directions_car, size: 20, color: const Color(0xFF18181B)),
+                                  Icon(
+                                    Icons.directions_car,
+                                    size: 20,
+                                    color: const Color(0xFF18181B),
+                                  ),
                                   const SizedBox(width: 12),
                                   Text(
                                     'Vehicle: ${widget.bus.vehicleNumber ?? 'N/A'}',
@@ -942,7 +978,7 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
                         ),
                       ),
                       const SizedBox(height: 20),
-                      
+
                       // Stops header
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -956,7 +992,7 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
                         ),
                       ),
                       const SizedBox(height: 12),
-                      
+
                       // Stops list
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -998,7 +1034,9 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
                               },
                               borderRadius: BorderRadius.circular(12),
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -1072,7 +1110,7 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
             ],
           ),
           const SizedBox(width: 16),
-          
+
           // Stop details
           Expanded(
             child: Column(
@@ -1089,7 +1127,11 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.schedule, size: 16, color: const Color(0xFF71717A)),
+                    Icon(
+                      Icons.schedule,
+                      size: 16,
+                      color: const Color(0xFF71717A),
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       stop['time'] ?? '00:00',
@@ -1100,7 +1142,11 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Icon(Icons.location_on, size: 16, color: const Color(0xFF71717A)),
+                    Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: const Color(0xFF71717A),
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       '${stop['distance']}km',
@@ -1133,10 +1179,7 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
         ),
       ),
       body: GoogleMap(
-        initialCameraPosition: CameraPosition(
-          target: _userLocation,
-          zoom: 15,
-        ),
+        initialCameraPosition: CameraPosition(target: _userLocation, zoom: 15),
         onMapCreated: (controller) => _mapController = controller,
         markers: _buildMapMarkers(),
         polylines: _buildPolylines(),
@@ -1154,7 +1197,7 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
 
   Set<Marker> _buildMapMarkers() {
     final markers = <Marker>{};
-    
+
     // User's actual location - LIVE LOCATION with "You are here" tag
     markers.add(
       Marker(
@@ -1173,7 +1216,10 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
       markers.add(
         Marker(
           markerId: MarkerId(stop['name']),
-          position: LatLng(stop['latitude'] as double, stop['longitude'] as double),
+          position: LatLng(
+            stop['latitude'] as double,
+            stop['longitude'] as double,
+          ),
           infoWindow: InfoWindow(
             title: stop['name'],
             snippet: 'Time: ${stop['time']} | Distance: ${stop['distance']}km',
@@ -1189,44 +1235,48 @@ class _BusDetailsModalState extends State<_BusDetailsModal> with SingleTickerPro
   Set<Polyline> _buildPolylines() {
     // Create realistic route polyline with enhanced intermediate waypoints
     final List<LatLng> routePoints = [];
-    
+
     // Add all stop locations
     for (var stop in _currentStops) {
-      routePoints.add(LatLng(stop['latitude'] as double, stop['longitude'] as double));
+      routePoints.add(
+        LatLng(stop['latitude'] as double, stop['longitude'] as double),
+      );
     }
-    
+
     // Add more intermediate waypoints for smoother, more accurate road-like curves
     final List<LatLng> detailedRoute = [];
-    
+
     for (int i = 0; i < routePoints.length - 1; i++) {
       detailedRoute.add(routePoints[i]);
-      
+
       // Add intermediate waypoints between stops for smooth curved roads
       final lat1 = routePoints[i].latitude;
       final lng1 = routePoints[i].longitude;
       final lat2 = routePoints[i + 1].latitude;
       final lng2 = routePoints[i + 1].longitude;
-      
+
       // Create 4-5 intermediate points for much smoother curves
       // This makes the polyline follow more naturally
       for (double t = 0.2; t < 1.0; t += 0.2) {
         // Linear interpolation between two stops
         final midLat = lat1 + (lat2 - lat1) * t;
         final midLng = lng1 + (lng2 - lng1) * t;
-        
+
         // Add curve variations to simulate realistic road bends
         // Using Bezier-like curve function for smoother paths
         final curveVariation = 0.0008 * (t - 0.5) * (t - 0.5) * (1 - t);
-        detailedRoute.add(LatLng(
-          midLat + curveVariation,
-          midLng - curveVariation, // Alternate direction for natural curves
-        ));
+        detailedRoute.add(
+          LatLng(
+            midLat + curveVariation,
+            midLng - curveVariation, // Alternate direction for natural curves
+          ),
+        );
       }
     }
-    
+
     // Add the final point
     detailedRoute.add(routePoints.last);
-    
+
     return {
       Polyline(
         polylineId: const PolylineId('route'),

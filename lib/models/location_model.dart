@@ -54,7 +54,9 @@ class BusLocation {
       arrivalPlace: json['arrivalPlace'] ?? '',
       currentLatitude: (json['currentLatitude'] ?? 0.0).toDouble(),
       currentLongitude: (json['currentLongitude'] ?? 0.0).toDouble(),
-      lastUpdated: DateTime.parse(json['lastUpdated'] ?? DateTime.now().toIso8601String()),
+      lastUpdated: DateTime.parse(
+        json['lastUpdated'] ?? DateTime.now().toIso8601String(),
+      ),
       status: json['status'] ?? 'in-transit',
       delayReason: json['delayReason'],
       delayMinutes: json['delayMinutes'] ?? 0,
@@ -146,7 +148,9 @@ class DriverLocation {
       assignedBusNumber: json['assignedBusNumber'] ?? '',
       currentLatitude: (json['currentLatitude'] ?? 0.0).toDouble(),
       currentLongitude: (json['currentLongitude'] ?? 0.0).toDouble(),
-      lastUpdated: DateTime.parse(json['lastUpdated'] ?? DateTime.now().toIso8601String()),
+      lastUpdated: DateTime.parse(
+        json['lastUpdated'] ?? DateTime.now().toIso8601String(),
+      ),
       status: json['status'] ?? 'offline',
       isActive: json['isActive'] ?? true,
     );
@@ -237,7 +241,9 @@ class BusRoute {
       estimatedDurationMinutes: json['estimatedDurationMinutes'] ?? 0,
       assignedBuses: List<String>.from(json['assignedBuses'] ?? []),
       isActive: json['isActive'] ?? true,
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+        json['createdAt'] ?? DateTime.now().toIso8601String(),
+      ),
     );
   }
 
@@ -263,7 +269,8 @@ class BusRoute {
       departureTime: departureTime ?? this.departureTime,
       arrivalTime: arrivalTime ?? this.arrivalTime,
       stops: stops ?? this.stops,
-      estimatedDurationMinutes: estimatedDurationMinutes ?? this.estimatedDurationMinutes,
+      estimatedDurationMinutes:
+          estimatedDurationMinutes ?? this.estimatedDurationMinutes,
       assignedBuses: assignedBuses ?? this.assignedBuses,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
@@ -333,7 +340,10 @@ class StudentBusAssignment {
   }
 
   // Create from JSON
-  factory StudentBusAssignment.fromJson(String assignmentId, Map<String, dynamic> json) {
+  factory StudentBusAssignment.fromJson(
+    String assignmentId,
+    Map<String, dynamic> json,
+  ) {
     return StudentBusAssignment(
       assignmentId: assignmentId,
       studentId: json['studentId'] ?? '',
@@ -348,7 +358,9 @@ class StudentBusAssignment {
       stopPlace: json['stopPlace'] ?? '',
       stopLatitude: (json['stopLatitude'] ?? 0.0).toDouble(),
       stopLongitude: (json['stopLongitude'] ?? 0.0).toDouble(),
-      assignedDate: DateTime.parse(json['assignedDate'] ?? DateTime.now().toIso8601String()),
+      assignedDate: DateTime.parse(
+        json['assignedDate'] ?? DateTime.now().toIso8601String(),
+      ),
       isActive: json['isActive'] ?? true,
       notes: json['notes'],
     );
@@ -465,12 +477,20 @@ class RouteTable {
       arrivalLongitude: (json['arrivalLongitude'] ?? 0.0).toDouble(),
       departureTime: json['departureTime'] ?? '00:00',
       arrivalTime: json['arrivalTime'] ?? '00:00',
-      stops: (json['stops'] as List?)?.map((s) => RouteStop.fromJson(s)).toList() ?? [],
+      stops:
+          (json['stops'] as List?)
+              ?.map((s) => RouteStop.fromJson(s))
+              .toList() ??
+          [],
       estimatedDurationMinutes: json['estimatedDurationMinutes'] ?? 0,
       assignedBuses: List<String>.from(json['assignedBuses'] ?? []),
       isActive: json['isActive'] ?? true,
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
-      lastUpdated: DateTime.parse(json['lastUpdated'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+        json['createdAt'] ?? DateTime.now().toIso8601String(),
+      ),
+      lastUpdated: DateTime.parse(
+        json['lastUpdated'] ?? DateTime.now().toIso8601String(),
+      ),
     );
   }
 
@@ -504,7 +524,8 @@ class RouteTable {
       departureTime: departureTime ?? this.departureTime,
       arrivalTime: arrivalTime ?? this.arrivalTime,
       stops: stops ?? this.stops,
-      estimatedDurationMinutes: estimatedDurationMinutes ?? this.estimatedDurationMinutes,
+      estimatedDurationMinutes:
+          estimatedDurationMinutes ?? this.estimatedDurationMinutes,
       assignedBuses: assignedBuses ?? this.assignedBuses,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,

@@ -39,14 +39,16 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
       final snapshot = await _firestore.collection('routes').get();
       final routes = snapshot.docs.map((doc) {
         final data = doc.data();
-        
+
         // Extract waypoints as stops
         final waypoints = data['waypoints'] as List<dynamic>? ?? [];
         final stops = waypoints
-            .map((wp) => (wp as Map<String, dynamic>)['location'] as String? ?? '')
+            .map(
+              (wp) => (wp as Map<String, dynamic>)['location'] as String? ?? '',
+            )
             .where((stop) => stop.isNotEmpty)
             .toList();
-        
+
         return BusRoute(
           routeId: doc.id,
           routeName: data['routeName'] ?? '',
@@ -59,17 +61,20 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
             data['departureTime'] ?? '',
             data['arrivalTime'] ?? '',
           ),
-          assignedBuses: data['busNumber'] != null ? [data['busNumber'].toString()] : [],
-          createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+          assignedBuses: data['busNumber'] != null
+              ? [data['busNumber'].toString()]
+              : [],
+          createdAt:
+              (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         );
       }).toList();
       setState(() => _routes = routes);
       print('✓ Loaded ${routes.length} routes from Firebase');
     } catch (e) {
       print('Error loading routes: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading routes: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error loading routes: $e')));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -79,10 +84,10 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
     try {
       final depParts = departureTime.split(':');
       final arrParts = arrivalTime.split(':');
-      
+
       final depMinutes = int.parse(depParts[0]) * 60 + int.parse(depParts[1]);
       final arrMinutes = int.parse(arrParts[0]) * 60 + int.parse(arrParts[1]);
-      
+
       int duration = arrMinutes - depMinutes;
       if (duration < 0) {
         duration += 24 * 60; // Add 24 hours if arrival is next day
@@ -107,11 +112,7 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
 
     try {
       final waypoints = _stops
-          .map((stop) => {
-                'location': stop,
-                'latitude': 0.0,
-                'longitude': 0.0,
-              })
+          .map((stop) => {'location': stop, 'latitude': 0.0, 'longitude': 0.0})
           .toList();
 
       // Save to Firebase with new structure
@@ -130,18 +131,21 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
         'waypoints': waypoints,
         'createdAt': Timestamp.now(),
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✓ Route created successfully'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('✓ Route created successfully'),
+          backgroundColor: Colors.green,
+        ),
       );
 
       // Clear form
       _clearForm();
       await _loadRoutes();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error creating route: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error creating route: $e')));
     }
   }
 
@@ -163,13 +167,16 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
     try {
       await _firestore.collection('routes').doc(routeId).delete();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✓ Route deleted'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('✓ Route deleted'),
+          backgroundColor: Colors.green,
+        ),
       );
       await _loadRoutes();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error deleting route: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error deleting route: $e')));
     }
   }
 
@@ -262,16 +269,25 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        _buildTextField(_routeNameController, 'Route Name (e.g., Morning Express)'),
+                        _buildTextField(
+                          _routeNameController,
+                          'Route Name (e.g., Morning Express)',
+                        ),
                         const SizedBox(height: 12),
                         Row(
                           children: [
                             Expanded(
-                              child: _buildTextField(_departureController, 'Departure Place'),
+                              child: _buildTextField(
+                                _departureController,
+                                'Departure Place',
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: _buildTextField(_arrivalController, 'Arrival Place'),
+                              child: _buildTextField(
+                                _arrivalController,
+                                'Arrival Place',
+                              ),
                             ),
                           ],
                         ),
@@ -280,7 +296,9 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
                           children: [
                             Expanded(
                               child: GestureDetector(
-                                onTap: () => _showTimePickerDialog(_departureTimeController),
+                                onTap: () => _showTimePickerDialog(
+                                  _departureTimeController,
+                                ),
                                 child: _buildTextField(
                                   _departureTimeController,
                                   'Departure Time',
@@ -292,7 +310,9 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: GestureDetector(
-                                onTap: () => _showTimePickerDialog(_arrivalTimeController),
+                                onTap: () => _showTimePickerDialog(
+                                  _arrivalTimeController,
+                                ),
                                 child: _buildTextField(
                                   _arrivalTimeController,
                                   'Arrival Time',
@@ -346,12 +366,19 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
                             children: _stops
                                 .map(
                                   (stop) => Chip(
-                                    label: Text(stop, style: const TextStyle(fontSize: 12)),
+                                    label: Text(
+                                      stop,
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
                                     onDeleted: () {
                                       setState(() => _stops.remove(stop));
                                     },
-                                    backgroundColor: const Color(0xFF18181B).withOpacity(0.1),
-                                    labelStyle: const TextStyle(color: Color(0xFF18181B)),
+                                    backgroundColor: const Color(
+                                      0xFF18181B,
+                                    ).withOpacity(0.1),
+                                    labelStyle: const TextStyle(
+                                      color: Color(0xFF18181B),
+                                    ),
                                   ),
                                 )
                                 .toList(),
@@ -465,7 +492,11 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.location_on, size: 14, color: const Color(0xFF71717A)),
+                        Icon(
+                          Icons.location_on,
+                          size: 14,
+                          color: const Color(0xFF71717A),
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -485,14 +516,18 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
               ),
               IconButton(
                 onPressed: () => _deleteRoute(route.routeId),
-                icon: const Icon(Icons.delete, color: Color(0xFFEF4444), size: 20),
+                icon: const Icon(
+                  Icons.delete,
+                  color: Color(0xFFEF4444),
+                  size: 20,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           const Divider(color: Color(0xFFE4E4E7), height: 1),
           const SizedBox(height: 12),
-          
+
           // Time Info
           Row(
             children: [
@@ -526,14 +561,11 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
               const SizedBox(width: 6),
               Text(
                 'Duration: ${route.estimatedDurationMinutes} minutes',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF71717A),
-                ),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF71717A)),
               ),
             ],
           ),
-          
+
           // Stops/Waypoints
           if (route.stops.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -552,7 +584,10 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
               children: route.stops
                   .map(
                     (stop) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF18181B).withOpacity(0.05),
                         borderRadius: BorderRadius.circular(12),
@@ -561,7 +596,11 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.location_on, size: 10, color: const Color(0xFF18181B)),
+                          Icon(
+                            Icons.location_on,
+                            size: 10,
+                            color: const Color(0xFF18181B),
+                          ),
                           const SizedBox(width: 3),
                           Text(
                             stop,
@@ -578,7 +617,7 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
                   .toList(),
             ),
           ],
-          
+
           // Bus Number
           if (route.assignedBuses.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -591,7 +630,11 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.directions_bus, size: 16, color: const Color(0xFF18181B)),
+                  Icon(
+                    Icons.directions_bus,
+                    size: 16,
+                    color: const Color(0xFF18181B),
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Bus #${route.assignedBuses.join(', ')}',
@@ -638,7 +681,10 @@ class _RouteManagementPageState extends State<RouteManagementPage> {
         suffixIcon: suffixIcon != null ? Icon(suffixIcon, size: 18) : null,
         filled: true,
         fillColor: const Color(0xFFFAFAFA),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
       ),
     );
   }

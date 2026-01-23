@@ -31,10 +31,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _pages = [
       _getRolePage(),
-      ProfilePage(
-        userId: widget.userId,
-        userRole: widget.userRole,
-      ),
+      ProfilePage(userId: widget.userId, userRole: widget.userRole),
     ];
   }
 
@@ -107,7 +104,7 @@ class _HomePageState extends State<HomePage> {
     required int index,
   }) {
     final isSelected = _selectedIndex == index;
-    
+
     return GestureDetector(
       onTap: () => setState(() => _selectedIndex = index),
       child: Container(

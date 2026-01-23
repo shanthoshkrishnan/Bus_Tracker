@@ -11,7 +11,8 @@ class RegisterPage extends StatefulWidget {
   State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderStateMixin {
+class _RegisterPageState extends State<RegisterPage>
+    with SingleTickerProviderStateMixin {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -23,7 +24,7 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
   String _selectedRole = 'student';
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
+
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
@@ -75,10 +76,11 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
     setState(() => _isLoading = true);
 
     try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
 
       await _firestore.collection('users').doc(userCredential.user!.uid).set({
         'firstName': _firstNameController.text.trim(),
@@ -100,11 +102,10 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
       }
 
       if (!mounted) return;
-      
+
       _showSnackBar('Account created successfully!', isError: false);
       await Future.delayed(const Duration(seconds: 1));
       Navigator.of(context).pop();
-      
     } on FirebaseAuthException catch (e) {
       setState(() => _isLoading = false);
       String errorMessage = 'Registration failed';
@@ -126,7 +127,9 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+        backgroundColor: isError
+            ? const Color(0xFFEF4444)
+            : const Color(0xFF10B981),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         margin: const EdgeInsets.all(16),
@@ -218,7 +221,10 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFFE4E4E7), width: 1.5),
+                        border: Border.all(
+                          color: const Color(0xFFE4E4E7),
+                          width: 1.5,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -226,7 +232,10 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
                         child: DropdownButton<String>(
                           value: _selectedRole,
                           isExpanded: true,
-                          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF71717A)),
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: Color(0xFF71717A),
+                          ),
                           style: TextStyle(
                             fontSize: 15,
                             color: const Color(0xFF18181B),
@@ -239,25 +248,30 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
                           },
                           items: <String>['student', 'driver', 'admin']
                               .map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    value == 'student'
-                                        ? Icons.school_outlined
-                                        : value == 'driver'
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        value == 'student'
+                                            ? Icons.school_outlined
+                                            : value == 'driver'
                                             ? Icons.drive_eta_outlined
-                                            : Icons.admin_panel_settings_outlined,
-                                    color: const Color(0xFF71717A),
-                                    size: 20,
+                                            : Icons
+                                                  .admin_panel_settings_outlined,
+                                        color: const Color(0xFF71717A),
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        value[0].toUpperCase() +
+                                            value.substring(1),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 12),
-                                  Text(value[0].toUpperCase() + value.substring(1)),
-                                ],
-                              ),
-                            );
-                          }).toList(),
+                                );
+                              })
+                              .toList(),
                         ),
                       ),
                     ),
@@ -274,11 +288,14 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
                   obscureText: _obscurePassword,
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       color: const Color(0xFF71717A),
                       size: 20,
                     ),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -292,11 +309,15 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
                   obscureText: _obscureConfirmPassword,
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       color: const Color(0xFF71717A),
                       size: 20,
                     ),
-                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                    onPressed: () => setState(
+                      () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -321,7 +342,9 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                               strokeWidth: 2,
                             ),
                           )
@@ -417,7 +440,10 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
               prefixIcon: Icon(icon, color: const Color(0xFF71717A), size: 20),
               suffixIcon: suffixIcon,
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
             ),
           ),
         ),

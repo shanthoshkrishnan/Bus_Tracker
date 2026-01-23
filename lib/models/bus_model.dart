@@ -47,8 +47,12 @@ class BusModel {
       departureLongitude: (map['departureLongitude'] ?? 0.0).toDouble(),
       arrivalLatitude: (map['arrivalLatitude'] ?? 0.0).toDouble(),
       arrivalLongitude: (map['arrivalLongitude'] ?? 0.0).toDouble(),
-      currentLatitude: map['currentLatitude'] != null ? (map['currentLatitude']).toDouble() : null,
-      currentLongitude: map['currentLongitude'] != null ? (map['currentLongitude']).toDouble() : null,
+      currentLatitude: map['currentLatitude'] != null
+          ? (map['currentLatitude']).toDouble()
+          : null,
+      currentLongitude: map['currentLongitude'] != null
+          ? (map['currentLongitude']).toDouble()
+          : null,
       driverName: map['driverName'] ?? '',
       driverPhone: map['driverPhone'] ?? '',
       vehicleNumber: map['vehicleNumber'] ?? '',
