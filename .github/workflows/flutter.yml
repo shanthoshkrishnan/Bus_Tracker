@@ -18,7 +18,6 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.8.1
           channel: stable
 
       - name: Cache Flutter dependencies
@@ -55,7 +54,7 @@ jobs:
         run: flutter build appbundle --debug
 
       - name: Upload APK as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: app-debug.apk
           path: build/app/outputs/flutter-apk/app-debug.apk
@@ -71,7 +70,6 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.8.1
           channel: stable
 
       - name: Get dependencies
@@ -97,7 +95,6 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.8.1
           channel: stable
 
       - name: Get dependencies
