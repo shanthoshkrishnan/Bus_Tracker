@@ -6,7 +6,7 @@ class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     // Firebase Configuration is loaded from .env file
     // See .env.example for required variables
-    // 
+    //
     // Setup Instructions:
     // 1. Copy .env.example to .env
     // 2. Get Firebase credentials from: https://console.firebase.google.com/

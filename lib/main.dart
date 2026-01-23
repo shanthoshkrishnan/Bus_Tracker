@@ -1,24 +1,49 @@
+// ignore_for_file: avoid_print
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:geolocator/geolocator.dart';
 import 'firebase_options.dart';
 import 'pages/login_page.dart';
 import 'pages/register_page.dart';
 import 'pages/forgot_password_page.dart';
+import 'services/driver_sync_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // Load environment variables first
+  try {
+    await dotenv.load(fileName: '.env');
+    print('✅ Environment loaded successfully');
+  } catch (e) {
+    print('⚠️ Warning: Could not load .env file: $e');
+  }
+
   // Initialize Firebase only once
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    print('✅ Firebase initialized successfully');
+    // Check if Firebase is already initialized
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      print('✅ Firebase initialized successfully');
+    } else {
+      print('ℹ️ Firebase already initialized, skipping...');
+    }
   } catch (e) {
-    print('Firebase initialization: $e');
-    // Continue anyway - Firebase might be auto-initialized on Android
+    // Handle both initialization errors and duplicate app errors
+    if (e.toString().contains('[core/duplicate-app]')) {
+      print(
+        'ℹ️ Firebase already initialized (duplicate app detected), using existing instance',
+      );
+    } else {
+      print('❌ Firebase initialization error: $e');
+    }
+    // Don't rethrow - allow app to continue with cached Firebase instance
   }
-  
+
   runApp(const MyApp());
 }
 
@@ -28,12 +53,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Bus Tracker',
+      title: 'LO BUS',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF8B6F47)),
         useMaterial3: true,
       ),
-      home: const LoginPage(),
+      home: const _AppInitializer(),
       routes: {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
@@ -41,6 +66,190 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const MyHomePage(title: 'Bus Tracker Home'),
       },
     );
+  }
+}
+
+// Initializer widget to sync driver on app startup
+class _AppInitializer extends StatefulWidget {
+  const _AppInitializer();
+
+  @override
+  State<_AppInitializer> createState() => _AppInitializerState();
+}
+
+class _AppInitializerState extends State<_AppInitializer> {
+  bool _syncCompleted = false;
+  bool _locationPermissionHandled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    try {
+      // Request location permission on app startup
+      await _requestLocationPermission();
+
+      // Check if user is logged in
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        // Sync driver data if user is authenticated
+        await DriverSyncService().syncCurrentUserDriver();
+        print('✅ Driver sync completed on app startup');
+      }
+    } catch (e) {
+      print('⚠️ Initialization error: $e');
+      // Continue anyway - don't block app startup
+    } finally {
+      if (mounted) {
+        setState(() {
+          _syncCompleted = true;
+          _locationPermissionHandled = true;
+        });
+      }
+    }
+  }
+
+  Future<bool> _requestLocationPermission() async {
+    try {
+      final status = await Geolocator.checkPermission();
+
+      if (status == LocationPermission.denied) {
+        final result = await Geolocator.requestPermission();
+
+        if (result == LocationPermission.denied) {
+          _showLocationPermissionDialog(true);
+          return false;
+        } else if (result == LocationPermission.deniedForever) {
+          _showLocationPermissionDialog(false);
+          return false;
+        }
+
+        print('✅ Location permission granted');
+        return true;
+      } else if (status == LocationPermission.deniedForever) {
+        _showLocationPermissionDialog(false);
+        return false;
+      }
+
+      print('✅ Location permission already granted');
+      return true;
+    } catch (e) {
+      print('⚠️ Error requesting location permission: $e');
+      return false;
+    }
+  }
+
+  void _showLocationPermissionDialog(bool canRetry) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.location_on, color: const Color(0xFF18181B), size: 28),
+            const SizedBox(width: 12),
+            const Text(
+              'Location Permission',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF18181B),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            Text(
+              canRetry
+                  ? 'This app needs access to your location to show real-time bus tracking and route information.'
+                  : 'You have permanently denied location permission. Please enable it in app settings to use this app.',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF71717A),
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          if (canRetry)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _initializeApp();
+              },
+              child: const Text(
+                'Try Again',
+                style: TextStyle(
+                  color: Color(0xFF18181B),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          else
+            TextButton(
+              onPressed: () {
+                Geolocator.openLocationSettings();
+              },
+              child: const Text(
+                'Open Settings',
+                style: TextStyle(
+                  color: Color(0xFF18181B),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Continue anyway
+              setState(() => _locationPermissionHandled = true);
+            },
+            child: const Text(
+              'Continue',
+              style: TextStyle(
+                color: Color(0xFFEF4444),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_syncCompleted || !_locationPermissionHandled) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFFAFAFA),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF18181B)),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Initializing Bus Tracker...',
+                style: TextStyle(color: Color(0xFF71717A), fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return const LoginPage();
   }
 }
 

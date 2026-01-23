@@ -1,6 +1,8 @@
+// ignore_for_file: avoid_print, use_build_context_synchronously
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import '../services/firebase_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/driver_sync_service.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -9,219 +11,128 @@ class RegisterPage extends StatefulWidget {
   State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage> {
+class _RegisterPageState extends State<RegisterPage>
+    with SingleTickerProviderStateMixin {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _ageController = TextEditingController();
-  final _dobController = TextEditingController();
-  final _addressController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-
-  String? _selectedRole;
-  String? _selectedGender;
-  String? _selectedAcademicYear;
-  String? _selectedDepartment;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _agreeToTerms = false;
   bool _isLoading = false;
+  String _selectedRole = 'student';
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  final List<String> _roles = ['Student', 'Driver', 'Staff', 'Worker', 'People', 'Admin'];
-  final List<String> _genders = ['Male', 'Female', 'Other'];
-  final List<String> _academicYears = ['First Year', 'Second Year', 'Third Year', 'Fourth Year'];
-  final List<String> _engineeringCourses = [
-    'Computer Science',
-    'Mechanical Engineering',
-    'Electrical Engineering',
-    'Civil Engineering',
-    'Chemical Engineering',
-    'Electronics Engineering',
-    'Software Engineering',
-    'Aerospace Engineering',
-  ];
-  final FirebaseService _firebaseService = FirebaseService();
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
 
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    );
+    _fadeController.forward();
+  }
 
   @override
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
-    _ageController.dispose();
-    _dobController.dispose();
-    _addressController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime(2000),
-      firstDate: DateTime(1950),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF8B6F47),
-              onPrimary: Colors.white,
-              surface: Color(0xFFF5F0E8),
-              onSurface: Color(0xFF5C4A3D),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      setState(() {
-        _dobController.text = DateFormat('yyyy-MM-dd').format(picked);
-      });
-    }
-  }
-
   void _handleRegister() async {
-    // Validation - check common fields
     if (_firstNameController.text.isEmpty ||
         _lastNameController.text.isEmpty ||
         _emailController.text.isEmpty ||
-        _ageController.text.isEmpty ||
-        _dobController.text.isEmpty ||
-        _addressController.text.isEmpty ||
         _passwordController.text.isEmpty ||
         _confirmPasswordController.text.isEmpty) {
-      _showErrorDialog('Please fill in all fields');
+      _showSnackBar('Please fill in all fields', isError: true);
       return;
-    }
-
-    if (_selectedRole == null) {
-      _showErrorDialog('Please select a role');
-      return;
-    }
-
-    if (_selectedGender == null) {
-      _showErrorDialog('Please select your gender');
-      return;
-    }
-
-    // If student role, validate student-specific fields
-    if (_selectedRole == 'Student') {
-      if (_selectedAcademicYear == null) {
-        _showErrorDialog('Please select academic year');
-        return;
-      }
-      if (_selectedDepartment == null) {
-        _showErrorDialog('Please select a course/department');
-        return;
-      }
     }
 
     if (_passwordController.text != _confirmPasswordController.text) {
-      _showErrorDialog('Passwords do not match');
+      _showSnackBar('Passwords do not match', isError: true);
       return;
     }
 
     if (_passwordController.text.length < 6) {
-      _showErrorDialog('Password must be at least 6 characters');
+      _showSnackBar('Password must be at least 6 characters', isError: true);
       return;
     }
 
-    if (!_isValidEmail(_emailController.text)) {
-      _showErrorDialog('Please enter a valid email address');
-      return;
-    }
-
-    if (!_agreeToTerms) {
-      _showErrorDialog('Please agree to terms and conditions');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Check if user already exists
-      bool userExists = await _firebaseService.userExists(_emailController.text);
-      if (userExists) {
-        _showErrorDialog('User with this email already exists');
-        setState(() {
-          _isLoading = false;
-        });
-        return;
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
+
+      await _firestore.collection('users').doc(userCredential.user!.uid).set({
+        'firstName': _firstNameController.text.trim(),
+        'lastName': _lastNameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'role': _selectedRole,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // If new user is a driver, trigger driver sync
+      if (_selectedRole.toLowerCase() == 'driver') {
+        try {
+          await DriverSyncService().syncCurrentUserDriver();
+          print('✓ Driver record created on registration');
+        } catch (e) {
+          print('Note: Driver sync after registration: $e');
+          // Don't block registration if sync fails
+        }
       }
 
-      // Register user
-      await _firebaseService.registerUser(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        firstName: _firstNameController.text.trim(),
-        lastName: _lastNameController.text.trim(),
-        year: _selectedRole == 'Student' ? _selectedAcademicYear! : '',
-        department: _selectedRole == 'Student' ? _selectedDepartment! : '',
-        age: int.parse(_ageController.text),
-        dob: _dobController.text,
-        address: _addressController.text.trim(),
-        role: _selectedRole!.toLowerCase(),
-        gender: _selectedGender!.toLowerCase(),
-      );
+      if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-      });
-
-      _showSuccessDialog('Account created successfully!');
+      _showSnackBar('Account created successfully!', isError: false);
+      await Future.delayed(const Duration(seconds: 1));
+      Navigator.of(context).pop();
+    } on FirebaseAuthException catch (e) {
+      setState(() => _isLoading = false);
+      String errorMessage = 'Registration failed';
+      if (e.code == 'weak-password') {
+        errorMessage = 'The password provided is too weak';
+      } else if (e.code == 'email-already-in-use') {
+        errorMessage = 'An account already exists for this email';
+      } else if (e.code == 'invalid-email') {
+        errorMessage = 'Invalid email address';
+      }
+      _showSnackBar(errorMessage, isError: true);
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showErrorDialog(e.toString());
+      setState(() => _isLoading = false);
+      _showSnackBar('Error: ${e.toString()}', isError: true);
     }
   }
 
-  bool _isValidEmail(String email) {
-    final RegExp emailRegex = RegExp(
-      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-    );
-    return emailRegex.hasMatch(email);
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Error'),
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
         content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSuccessDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Success'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.of(context).pop();
-            },
-            child: const Text('OK'),
-          ),
-        ],
+        backgroundColor: isError
+            ? const Color(0xFFEF4444)
+            : const Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
@@ -229,509 +140,256 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F0E8),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F0E8),
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF5C4A3D)),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF18181B)),
           onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Create Account',
-          style: TextStyle(
-            color: const Color(0xFF5C4A3D),
-            fontWeight: FontWeight.bold,
-          ),
         ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Join Us Today',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: const Color(0xFF5C4A3D),
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Create your account to get started',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF7A6B60),
-                    ),
-              ),
-              const SizedBox(height: 32),
-
-              // First Name Field
-              _buildTextField(
-                label: 'First Name',
-                controller: _firstNameController,
-                hintText: 'Enter your first name',
-                icon: Icons.person_outline,
-              ),
-              const SizedBox(height: 20),
-
-              // Last Name Field
-              _buildTextField(
-                label: 'Last Name',
-                controller: _lastNameController,
-                hintText: 'Enter your last name',
-                icon: Icons.person_outline,
-              ),
-              const SizedBox(height: 20),
-
-              // Email Field
-              _buildTextField(
-                label: 'Email Address',
-                controller: _emailController,
-                hintText: 'Enter your email',
-                icon: Icons.email_outlined,
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 20),
-
-              // Gender Dropdown (for all roles)
-              Text(
-                'Gender',
-                style: TextStyle(
-                  color: const Color(0xFF5C4A3D),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: _selectedGender,
-                hint: const Text('Select your gender'),
-                items: _genders.map((gender) {
-                  return DropdownMenuItem(
-                    value: gender,
-                    child: Text(gender),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedGender = value;
-                  });
-                },
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFD4C4B0),
-                      width: 2,
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFD4C4B0),
-                      width: 2,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF8B6F47),
-                      width: 2,
-                    ),
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.wc_outlined,
-                    color: Color(0xFF8B6F47),
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title
+                Text(
+                  'Create Account',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF18181B),
+                    letterSpacing: -0.5,
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-
-              // Role Dropdown (placed here before conditional fields)
-              Text(
-                'Role',
-                style: TextStyle(
-                  color: const Color(0xFF5C4A3D),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: _selectedRole,
-                hint: const Text('Select your role'),
-                items: _roles.map((role) {
-                  return DropdownMenuItem(
-                    value: role,
-                    child: Text(role),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedRole = value;
-                    // Reset student-specific fields when role changes
-                    if (value != 'Student') {
-                      _selectedAcademicYear = null;
-                      _selectedDepartment = null;
-                    }
-                  });
-                },
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFD4C4B0),
-                      width: 2,
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFD4C4B0),
-                      width: 2,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF8B6F47),
-                      width: 2,
-                    ),
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.security_outlined,
-                    color: Color(0xFF8B6F47),
+                const SizedBox(height: 8),
+                Text(
+                  'Sign up to get started',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: const Color(0xFF71717A),
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 32),
 
-              // Academic Year Dropdown (only for students)
-              if (_selectedRole == 'Student')
+                // First Name
+                _buildTextField(
+                  controller: _firstNameController,
+                  label: 'First Name',
+                  hint: 'John',
+                  icon: Icons.person_outline,
+                ),
+                const SizedBox(height: 16),
+
+                // Last Name
+                _buildTextField(
+                  controller: _lastNameController,
+                  label: 'Last Name',
+                  hint: 'Doe',
+                  icon: Icons.person_outline,
+                ),
+                const SizedBox(height: 16),
+
+                // Email
+                _buildTextField(
+                  controller: _emailController,
+                  label: 'Email',
+                  hint: 'you@example.com',
+                  icon: Icons.email_outlined,
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 16),
+
+                // Role Selector
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Academic Year',
+                      'Role',
                       style: TextStyle(
-                        color: const Color(0xFF5C4A3D),
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
+                        color: const Color(0xFF18181B),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value: _selectedAcademicYear,
-                      hint: const Text('Select academic year'),
-                      items: _academicYears.map((year) {
-                        return DropdownMenuItem(
-                          value: year,
-                          child: Text(year),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedAcademicYear = value;
-                        });
-                      },
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: Color(0xFFD4C4B0),
-                            width: 2,
-                          ),
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color(0xFFE4E4E7),
+                          width: 1.5,
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: Color(0xFFD4C4B0),
-                            width: 2,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedRole,
+                          isExpanded: true,
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: Color(0xFF71717A),
                           ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: Color(0xFF8B6F47),
-                            width: 2,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: const Color(0xFF18181B),
+                            fontWeight: FontWeight.w400,
                           ),
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.school_outlined,
-                          color: Color(0xFF8B6F47),
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              setState(() => _selectedRole = newValue);
+                            }
+                          },
+                          items: <String>['student', 'driver', 'admin']
+                              .map<DropdownMenuItem<String>>((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        value == 'student'
+                                            ? Icons.school_outlined
+                                            : value == 'driver'
+                                            ? Icons.drive_eta_outlined
+                                            : Icons
+                                                  .admin_panel_settings_outlined,
+                                        color: const Color(0xFF71717A),
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        value[0].toUpperCase() +
+                                            value.substring(1),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              })
+                              .toList(),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
                   ],
                 ),
+                const SizedBox(height: 16),
 
-              // Course/Department Dropdown (only for students)
-              if (_selectedRole == 'Student')
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Course / Department',
-                      style: TextStyle(
-                        color: const Color(0xFF5C4A3D),
-                        fontWeight: FontWeight.w600,
+                // Password
+                _buildTextField(
+                  controller: _passwordController,
+                  label: 'Password',
+                  hint: '••••••••',
+                  icon: Icons.lock_outline,
+                  obscureText: _obscurePassword,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: const Color(0xFF71717A),
+                      size: 20,
+                    ),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Confirm Password
+                _buildTextField(
+                  controller: _confirmPasswordController,
+                  label: 'Confirm Password',
+                  hint: '••••••••',
+                  icon: Icons.lock_outline,
+                  obscureText: _obscureConfirmPassword,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: const Color(0xFF71717A),
+                      size: 20,
+                    ),
+                    onPressed: () => setState(
+                      () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Register Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _handleRegister,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF18181B),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      disabledBackgroundColor: const Color(0xFFE4E4E7),
                     ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value: _selectedDepartment,
-                      hint: const Text('Select engineering course'),
-                      items: _engineeringCourses.map((course) {
-                        return DropdownMenuItem(
-                          value: course,
-                          child: Text(course),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedDepartment = value;
-                        });
-                      },
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: Color(0xFFD4C4B0),
-                            width: 2,
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: Color(0xFFD4C4B0),
-                            width: 2,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: Color(0xFF8B6F47),
-                            width: 2,
-                          ),
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.business_outlined,
-                          color: Color(0xFF8B6F47),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                ),
-
-              // Age Field
-              _buildTextField(
-                label: 'Age',
-                controller: _ageController,
-                hintText: 'Enter your age',
-                icon: Icons.cake_outlined,
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 20),
-
-              // Date of Birth Field
-              Text(
-                'Date of Birth',
-                style: TextStyle(
-                  color: const Color(0xFF5C4A3D),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _dobController,
-                readOnly: true,
-                onTap: () => _selectDate(context),
-                decoration: InputDecoration(
-                  hintText: 'Select your date of birth',
-                  hintStyle: const TextStyle(color: Color(0xFFB8A895)),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFD4C4B0),
-                      width: 2,
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFD4C4B0),
-                      width: 2,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF8B6F47),
-                      width: 2,
-                    ),
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.calendar_today_outlined,
-                    color: Color(0xFF8B6F47),
-                  ),
-                ),
-                style: const TextStyle(color: Color(0xFF5C4A3D)),
-              ),
-              const SizedBox(height: 20),
-
-              // Address Field
-              _buildTextField(
-                label: 'Address',
-                controller: _addressController,
-                hintText: 'Enter your address',
-                icon: Icons.location_on_outlined,
-                maxLines: 3,
-              ),
-              const SizedBox(height: 20),
-
-              const SizedBox(height: 20),
-
-              // Password Field
-              _buildPasswordField(
-                label: 'Password',
-                controller: _passwordController,
-                hintText: 'Enter your password',
-                obscureText: _obscurePassword,
-                onToggleVisibility: () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
-
-              // Confirm Password Field
-              _buildPasswordField(
-                label: 'Confirm Password',
-                controller: _confirmPasswordController,
-                hintText: 'Confirm your password',
-                obscureText: _obscureConfirmPassword,
-                onToggleVisibility: () {
-                  setState(() {
-                    _obscureConfirmPassword = !_obscureConfirmPassword;
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
-
-              // Terms and Conditions Checkbox
-              Row(
-                children: [
-                  Checkbox(
-                    value: _agreeToTerms,
-                    onChanged: (value) {
-                      setState(() {
-                        _agreeToTerms = value ?? false;
-                      });
-                    },
-                    activeColor: const Color(0xFF8B6F47),
-                    checkColor: Colors.white,
-                  ),
-                  Expanded(
-                    child: RichText(
-                      text: TextSpan(
-                        text: 'I agree to the ',
-                        style: const TextStyle(
-                          color: Color(0xFF7A6B60),
-                        ),
-                        children: [
-                          TextSpan(
-                            text: 'Terms & Conditions',
-                            style: const TextStyle(
-                              color: Color(0xFF8B6F47),
-                              fontWeight: FontWeight.bold,
-                              decoration: TextDecoration.underline,
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            'Create account',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 32),
-
-              // Register Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleRegister,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF8B6F47),
-                    disabledBackgroundColor: const Color(0xFFB8A895),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 4,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          'Create Account',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
                 ),
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
-              // Login Link
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Already have an account? ",
-                    style: TextStyle(
-                      color: const Color(0xFF7A6B60),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: Text(
-                      'Sign In',
+                // Sign In Link
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Already have an account? ',
                       style: TextStyle(
-                        color: const Color(0xFF8B6F47),
-                        fontWeight: FontWeight.bold,
-                        decoration: TextDecoration.underline,
+                        color: const Color(0xFF71717A),
+                        fontSize: 14,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-            ],
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        'Sign in',
+                        style: TextStyle(
+                          color: const Color(0xFF18181B),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -739,12 +397,13 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildTextField({
-    required String label,
     required TextEditingController controller,
-    required String hintText,
+    required String label,
+    required String hint,
     required IconData icon,
-    TextInputType keyboardType = TextInputType.text,
-    int maxLines = 1,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    TextInputType? keyboardType,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -752,114 +411,41 @@ class _RegisterPageState extends State<RegisterPage> {
         Text(
           label,
           style: TextStyle(
-            color: const Color(0xFF5C4A3D),
+            fontSize: 14,
             fontWeight: FontWeight.w600,
+            color: const Color(0xFF18181B),
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            hintText: hintText,
-            hintStyle: const TextStyle(color: Color(0xFFB8A895)),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFD4C4B0),
-                width: 2,
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFD4C4B0),
-                width: 2,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF8B6F47),
-                width: 2,
-              ),
-            ),
-            prefixIcon: Icon(
-              icon,
-              color: const Color(0xFF8B6F47),
-            ),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFE4E4E7), width: 1.5),
+            borderRadius: BorderRadius.circular(12),
           ),
-          style: const TextStyle(color: Color(0xFF5C4A3D)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPasswordField({
-    required String label,
-    required TextEditingController controller,
-    required String hintText,
-    required bool obscureText,
-    required VoidCallback onToggleVisibility,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: const Color(0xFF5C4A3D),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          obscureText: obscureText,
-          decoration: InputDecoration(
-            hintText: hintText,
-            hintStyle: const TextStyle(color: Color(0xFFB8A895)),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFD4C4B0),
-                width: 2,
+          child: TextField(
+            controller: controller,
+            obscureText: obscureText,
+            keyboardType: keyboardType,
+            style: TextStyle(
+              fontSize: 15,
+              color: const Color(0xFF18181B),
+              fontWeight: FontWeight.w400,
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(
+                color: const Color(0xFFA1A1AA),
+                fontWeight: FontWeight.w400,
               ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFD4C4B0),
-                width: 2,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF8B6F47),
-                width: 2,
-              ),
-            ),
-            prefixIcon: const Icon(
-              Icons.lock_outline,
-              color: Color(0xFF8B6F47),
-            ),
-            suffixIcon: GestureDetector(
-              onTap: onToggleVisibility,
-              child: Icon(
-                obscureText
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined,
-                color: const Color(0xFF8B6F47),
+              prefixIcon: Icon(icon, color: const Color(0xFF71717A), size: 20),
+              suffixIcon: suffixIcon,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
               ),
             ),
           ),
-          style: const TextStyle(color: Color(0xFF5C4A3D)),
         ),
       ],
     );

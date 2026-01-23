@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
@@ -23,10 +24,8 @@ class FirebaseService {
   }) async {
     try {
       // Create user in Firebase Auth
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(email: email, password: password);
 
       // Store user details in Firestore
       await _firestore.collection('users').doc(userCredential.user!.uid).set({
@@ -44,6 +43,21 @@ class FirebaseService {
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // If user is a driver, create a driver record
+      if (role.toLowerCase() == 'driver') {
+        await _firestore.collection('drivers').add({
+          'driverId': userCredential.user!.uid,
+          'driverName': '$firstName $lastName',
+          'driverEmail': email,
+          'driverPhone': '',
+          'assignedBusNumber': '',
+          'assignedRoute': '',
+          'status': 'active',
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
 
       print('User registered successfully: ${userCredential.user!.email}');
     } catch (e) {
@@ -82,7 +96,7 @@ class FirebaseService {
   }
 
   // Bus-related methods
-  
+
   // Get all buses assigned to a student
   Future<List<BusModel>> getBusesForStudent(String studentId) async {
     try {
@@ -152,7 +166,7 @@ class FirebaseService {
   Future<void> assignStudentToBus(String busId, String studentId) async {
     try {
       await _firestore.collection('buses').doc(busId).update({
-        'assignedStudents': FieldValue.arrayUnion([studentId])
+        'assignedStudents': FieldValue.arrayUnion([studentId]),
       });
     } catch (e) {
       print('Error assigning student to bus: $e');
@@ -164,7 +178,7 @@ class FirebaseService {
   Future<void> removeStudentFromBus(String busId, String studentId) async {
     try {
       await _firestore.collection('buses').doc(busId).update({
-        'assignedStudents': FieldValue.arrayRemove([studentId])
+        'assignedStudents': FieldValue.arrayRemove([studentId]),
       });
     } catch (e) {
       print('Error removing student from bus: $e');
@@ -191,6 +205,32 @@ class FirebaseService {
         };
       }).toList();
     } catch (e) {
+      // If index error, fallback to fetching all users and filtering
+      if (e.toString().contains('index') ||
+          e.toString().contains('requires an index')) {
+        try {
+          QuerySnapshot allUsers = await _firestore.collection('users').get();
+          return allUsers.docs
+              .where((doc) {
+                Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+                return data['role'] == 'driver';
+              })
+              .map((doc) {
+                Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+                return {
+                  'uid': doc.id,
+                  'firstName': data['firstName'] ?? '',
+                  'lastName': data['lastName'] ?? '',
+                  'email': data['email'] ?? '',
+                  'phone': data['phone'] ?? '',
+                };
+              })
+              .toList();
+        } catch (fallbackError) {
+          print('Error in fallback: $fallbackError');
+          rethrow;
+        }
+      }
       print('Error fetching drivers: $e');
       rethrow;
     }
@@ -247,7 +287,9 @@ class FirebaseService {
       } else {
         // Add new bus
         busData['createdAt'] = FieldValue.serverTimestamp();
-        DocumentReference docRef = await _firestore.collection('buses').add(busData);
+        DocumentReference docRef = await _firestore
+            .collection('buses')
+            .add(busData);
         print('Bus added successfully: ${docRef.id}');
         return docRef.id;
       }
@@ -382,12 +424,21 @@ class FirebaseService {
   }
 
   // Calculate distance between two coordinates (Haversine formula)
-  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+  double _calculateDistance(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
     const double R = 6371; // Earth's radius in km
     final double dLat = _toRadians(lat2 - lat1);
     final double dLon = _toRadians(lon2 - lon1);
-    final double a = (sin(dLat / 2) * sin(dLat / 2)) +
-        (cos(_toRadians(lat1)) * cos(_toRadians(lat2)) * sin(dLon / 2) * sin(dLon / 2));
+    final double a =
+        (sin(dLat / 2) * sin(dLat / 2)) +
+        (cos(_toRadians(lat1)) *
+            cos(_toRadians(lat2)) *
+            sin(dLon / 2) *
+            sin(dLon / 2));
     final double c = 2 * asin(sqrt(a));
     return R * c;
   }
@@ -409,7 +460,8 @@ class FirebaseService {
     required double arrivalLongitude,
     required String departureTime,
     required String arrivalTime,
-    required List<Map<String, dynamic>> waypoints, // [{location, lat, lon}, ...]
+    required List<Map<String, dynamic>>
+    waypoints, // [{location, lat, lon}, ...]
     required String routeType, // 'morning' or 'evening'
   }) async {
     try {
@@ -435,7 +487,9 @@ class FirebaseService {
         return routeId;
       } else {
         routeData['createdAt'] = FieldValue.serverTimestamp();
-        DocumentReference docRef = await _firestore.collection('routes').add(routeData);
+        DocumentReference docRef = await _firestore
+            .collection('routes')
+            .add(routeData);
         print('Route created: ${docRef.id}');
         return docRef.id;
       }
@@ -489,7 +543,8 @@ class FirebaseService {
     required String userId,
     required String busNumber,
     required String message,
-    required String notificationType, // 'bus_approaching', 'bus_arrived', 'bus_near'
+    required String
+    notificationType, // 'bus_approaching', 'bus_arrived', 'bus_near'
   }) async {
     try {
       await _firestore.collection('notifications').add({
@@ -517,10 +572,7 @@ class FirebaseService {
           .limit(50)
           .get();
 
-      return query.docs.map((doc) => {
-        'id': doc.id,
-        ...doc.data(),
-      }).toList();
+      return query.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
     } catch (e) {
       print('Error getting notifications: $e');
       return [];
@@ -548,7 +600,12 @@ class FirebaseService {
         final userLocation = userData['homeLocation'] as String?;
 
         if (userLat != null && userLng != null) {
-          final distance = _calculateDistance(busLatitude, busLongitude, userLat, userLng);
+          final distance = _calculateDistance(
+            busLatitude,
+            busLongitude,
+            userLat,
+            userLng,
+          );
 
           // Notify user if bus is very close (arrival)
           if (distance <= radiusKm) {
@@ -564,7 +621,8 @@ class FirebaseService {
             await createNotification(
               userId: userDoc.id,
               busNumber: busNumber,
-              message: 'Bus #$busNumber is approaching. ${distance.toStringAsFixed(1)} km away',
+              message:
+                  'Bus #$busNumber is approaching. ${distance.toStringAsFixed(1)} km away',
               notificationType: 'bus_approaching',
             );
           }
@@ -579,10 +637,7 @@ class FirebaseService {
   Future<List<Map<String, dynamic>>> getAllRoutes() async {
     try {
       final query = await _firestore.collection('routes').get();
-      return query.docs.map((doc) => {
-        'id': doc.id,
-        ...doc.data(),
-      }).toList();
+      return query.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
     } catch (e) {
       print('Error getting routes: $e');
       return [];
@@ -590,7 +645,9 @@ class FirebaseService {
   }
 
   // Get pending notifications for a user (unread)
-  Future<List<Map<String, dynamic>>> getPendingNotifications(String userId) async {
+  Future<List<Map<String, dynamic>>> getPendingNotifications(
+    String userId,
+  ) async {
     try {
       final query = await _firestore
           .collection('notifications')
@@ -599,11 +656,8 @@ class FirebaseService {
           .orderBy('createdAt', descending: true)
           .limit(10)
           .get();
-      
-      return query.docs.map((doc) => {
-        'id': doc.id,
-        ...doc.data(),
-      }).toList();
+
+      return query.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
     } catch (e) {
       print('Error getting notifications: $e');
       return [];
@@ -613,13 +667,297 @@ class FirebaseService {
   // Mark notification as read
   Future<void> markNotificationAsRead(String notificationId) async {
     try {
-      await _firestore
-          .collection('notifications')
-          .doc(notificationId)
-          .update({'read': true});
+      await _firestore.collection('notifications').doc(notificationId).update({
+        'read': true,
+      });
     } catch (e) {
       print('Error marking notification as read: $e');
     }
   }
-}
 
+  // Get all drivers from drivers collection
+  Future<List<Map<String, dynamic>>> getDriversFromCollection() async {
+    try {
+      QuerySnapshot driverDocs = await _firestore
+          .collection('drivers')
+          .where('status', isEqualTo: 'active')
+          .get();
+
+      return driverDocs.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return {...data, 'documentId': doc.id};
+      }).toList();
+    } catch (e) {
+      print('Error fetching drivers from drivers collection: $e');
+      return [];
+    }
+  }
+
+  // Update driver assignment (bus and route)
+  Future<void> updateDriverAssignment({
+    required String driverId,
+    required String assignedBusNumber,
+    required String assignedRoute,
+  }) async {
+    try {
+      // Update driver record in drivers collection
+      QuerySnapshot driverDocs = await _firestore
+          .collection('drivers')
+          .where('driverId', isEqualTo: driverId)
+          .get();
+
+      for (var doc in driverDocs.docs) {
+        await doc.reference.update({
+          'assignedBusNumber': assignedBusNumber,
+          'assignedRoute': assignedRoute,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      print('Driver assignment updated successfully');
+    } catch (e) {
+      print('Error updating driver assignment: $e');
+      rethrow;
+    }
+  }
+
+  // Update driver phone
+  Future<void> updateDriverPhone({
+    required String driverId,
+    required String phone,
+  }) async {
+    try {
+      QuerySnapshot driverDocs = await _firestore
+          .collection('drivers')
+          .where('driverId', isEqualTo: driverId)
+          .get();
+
+      for (var doc in driverDocs.docs) {
+        await doc.reference.update({
+          'driverPhone': phone,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      print('Driver phone updated successfully');
+    } catch (e) {
+      print('Error updating driver phone: $e');
+      rethrow;
+    }
+  }
+
+  // Deactivate driver
+  Future<void> deactivateDriver(String driverId) async {
+    try {
+      QuerySnapshot driverDocs = await _firestore
+          .collection('drivers')
+          .where('driverId', isEqualTo: driverId)
+          .get();
+
+      for (var doc in driverDocs.docs) {
+        await doc.reference.update({
+          'status': 'inactive',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      print('Driver deactivated successfully');
+    } catch (e) {
+      print('Error deactivating driver: $e');
+      rethrow;
+    }
+  }
+
+  // Reactivate driver
+  Future<void> reactivateDriver(String driverId) async {
+    try {
+      QuerySnapshot driverDocs = await _firestore
+          .collection('drivers')
+          .where('driverId', isEqualTo: driverId)
+          .get();
+
+      for (var doc in driverDocs.docs) {
+        await doc.reference.update({
+          'status': 'active',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      print('Driver reactivated successfully');
+    } catch (e) {
+      print('Error reactivating driver: $e');
+      rethrow;
+    }
+  }
+
+  // Update user profile AND sync driver record if needed
+  // This is called when user updates their profile
+  Future<void> updateUserProfile({
+    required String userId,
+    required String firstName,
+    required String lastName,
+    required String phone,
+    required String address,
+    required String role,
+  }) async {
+    try {
+      // Get current user data to track role changes
+      final currentUserDoc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .get();
+      final currentData = currentUserDoc.data() ?? {};
+      final previousRole = currentData['role'] ?? '';
+
+      // Update user profile
+      await _firestore.collection('users').doc(userId).update({
+        'firstName': firstName,
+        'lastName': lastName,
+        'phone': phone,
+        'address': address,
+        'role': role,
+        'previousRole': previousRole, // Track for sync purposes
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Trigger driver sync if user role is or was 'driver'
+      await _syncDriverAfterProfileUpdate(
+        userId,
+        firstName,
+        lastName,
+        phone,
+        role,
+        previousRole,
+      );
+
+      print('User profile updated: $userId');
+    } catch (e) {
+      print('Error updating user profile: $e');
+      rethrow;
+    }
+  }
+
+  // Internal method: Handle driver sync on profile update
+  Future<void> _syncDriverAfterProfileUpdate(
+    String userId,
+    String firstName,
+    String lastName,
+    String phone,
+    String newRole,
+    String previousRole,
+  ) async {
+    try {
+      final normalizedRole = newRole.toLowerCase();
+      final normalizedPrevRole = previousRole.toLowerCase();
+
+      // Case 1: User became a driver
+      if (normalizedRole == 'driver' && normalizedPrevRole != 'driver') {
+        await _createDriverRecord(
+          userId: userId,
+          firstName: firstName,
+          lastName: lastName,
+          phone: phone,
+        );
+        print('✓ Driver record created on profile update');
+        return;
+      }
+
+      // Case 2: User is still a driver - sync details
+      if (normalizedRole == 'driver') {
+        await _updateDriverDetails(userId, firstName, lastName, phone);
+        print('✓ Driver details synced on profile update');
+        return;
+      }
+
+      // Case 3: User is no longer a driver - mark as inactive
+      if (normalizedRole != 'driver' && normalizedPrevRole == 'driver') {
+        await _markDriverInactiveByUserId(userId);
+        print('✓ Driver marked inactive on role change');
+      }
+    } catch (e) {
+      print('Error syncing driver on profile update: $e');
+      // Don't rethrow - profile update should still succeed even if driver sync fails
+    }
+  }
+
+  // Internal: Create driver record
+  Future<void> _createDriverRecord({
+    required String userId,
+    required String firstName,
+    required String lastName,
+    required String phone,
+  }) async {
+    try {
+      final existingDriver = await _firestore
+          .collection('drivers')
+          .where('driverId', isEqualTo: userId)
+          .limit(1)
+          .get();
+
+      if (existingDriver.docs.isNotEmpty) {
+        return; // Already exists
+      }
+
+      await _firestore.collection('drivers').add({
+        'driverId': userId,
+        'driverName': '$firstName $lastName'.trim(),
+        'driverEmail': _auth.currentUser?.email ?? '',
+        'driverPhone': phone,
+        'assignedBusNumber': '',
+        'assignedRoute': '',
+        'status': 'active',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Error creating driver record: $e');
+      rethrow;
+    }
+  }
+
+  // Internal: Update driver details
+  Future<void> _updateDriverDetails(
+    String userId,
+    String firstName,
+    String lastName,
+    String phone,
+  ) async {
+    try {
+      final driverDocs = await _firestore
+          .collection('drivers')
+          .where('driverId', isEqualTo: userId)
+          .get();
+
+      for (var doc in driverDocs.docs) {
+        await doc.reference.update({
+          'driverName': '$firstName $lastName'.trim(),
+          'driverPhone': phone,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      print('Error updating driver details: $e');
+      rethrow;
+    }
+  }
+
+  // Internal: Mark driver as inactive
+  Future<void> _markDriverInactiveByUserId(String userId) async {
+    try {
+      final driverDocs = await _firestore
+          .collection('drivers')
+          .where('driverId', isEqualTo: userId)
+          .get();
+
+      for (var doc in driverDocs.docs) {
+        await doc.reference.update({
+          'status': 'inactive',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      print('Error marking driver inactive: $e');
+      rethrow;
+    }
+  }
+}

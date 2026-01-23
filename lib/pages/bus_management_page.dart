@@ -1,13 +1,11 @@
+// ignore_for_file: avoid_print, unused_element
 import 'package:flutter/material.dart';
 import '../services/firebase_service.dart';
 
 class BusManagementPage extends StatefulWidget {
   final String? busId;
 
-  const BusManagementPage({
-    super.key,
-    this.busId,
-  });
+  const BusManagementPage({super.key, this.busId});
 
   @override
   State<BusManagementPage> createState() => _BusManagementPageState();
@@ -69,9 +67,9 @@ class _BusManagementPageState extends State<BusManagementPage> {
       } catch (e) {
         print('Error loading bus data: $e');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error loading bus: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error loading bus: $e')));
         }
       }
     }
@@ -135,9 +133,13 @@ class _BusManagementPageState extends State<BusManagementPage> {
     }
 
     // Check for duplicate bus number
-    final busNumberExists = await _isBusNumberExists(_busNumberController.text.trim());
+    final busNumberExists = await _isBusNumberExists(
+      _busNumberController.text.trim(),
+    );
     if (busNumberExists) {
-      _showErrorDialog('Bus number ${_busNumberController.text.trim()} already exists. Please use a different number.');
+      _showErrorDialog(
+        'Bus number ${_busNumberController.text.trim()} already exists. Please use a different number.',
+      );
       return;
     }
 
@@ -200,8 +202,11 @@ class _BusManagementPageState extends State<BusManagementPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              _isEditMode ? 'Bus updated successfully!' : 'Bus created successfully!',
+              _isEditMode
+                  ? 'Bus updated successfully!'
+                  : 'Bus created successfully!',
             ),
+            backgroundColor: const Color(0xFF10B981),
           ),
         );
         Navigator.pop(context);
@@ -220,11 +225,25 @@ class _BusManagementPageState extends State<BusManagementPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Error'),
-        content: Text(message),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Error',
+          style: TextStyle(
+            color: const Color(0xFF18181B),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          message,
+          style: TextStyle(color: const Color(0xFF71717A)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF18181B),
+            ),
             child: const Text('OK'),
           ),
         ],
@@ -234,18 +253,319 @@ class _BusManagementPageState extends State<BusManagementPage> {
 
   @override
   Widget build(BuildContext context) {
+    // If busId is provided, show edit form. Otherwise show list
+    if (_isEditMode) {
+      return _buildEditForm();
+    } else {
+      return _buildBusesList();
+    }
+  }
+
+  Widget _buildBusesList() {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F0E8),
+      backgroundColor: const Color(0xFFFAFAFA),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF8B6F47),
+        backgroundColor: Colors.white,
         elevation: 0,
-        title: Text(
-          _isEditMode ? 'Edit Bus' : 'Create New Bus',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF18181B)),
           onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Bus Management',
+          style: TextStyle(
+            color: const Color(0xFF18181B),
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.add_circle_outline,
+              color: Color(0xFF18181B),
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const BusManagementPage(busId: ''),
+                ),
+              ).then((_) => setState(() {}));
+            },
+          ),
+        ],
+      ),
+      body: FutureBuilder<List<dynamic>>(
+        future: _firebaseService.getAllBuses(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  const Color(0xFF18181B),
+                ),
+                strokeWidth: 2,
+              ),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Container(
+                margin: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE4E4E7)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: const Color(0xFFEF4444),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error loading buses',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF18181B),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${snapshot.error}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: const Color(0xFF71717A),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final buses = snapshot.data ?? [];
+
+          if (buses.isEmpty) {
+            return Center(
+              child: Container(
+                margin: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE4E4E7)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFAFAFA),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Icon(
+                        Icons.directions_bus_outlined,
+                        size: 40,
+                        color: const Color(0xFF71717A),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'No Buses Yet',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF18181B),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tap the + button to add a bus',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: const Color(0xFF71717A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: buses.length,
+            itemBuilder: (context, index) {
+              final bus = buses[index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE4E4E7)),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              BusManagementPage(busId: bus.id),
+                        ),
+                      ).then((_) => setState(() {}));
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFAFAFA),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.directions_bus,
+                              color: const Color(0xFF18181B),
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Bus ${bus.busNumber}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF18181B),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  bus.busRoute,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: const Color(0xFF71717A),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: bus.status == 'active'
+                                  ? const Color(0xFFF0FDF4)
+                                  : const Color(0xFFFEF3C7),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: bus.status == 'active'
+                                    ? const Color(0xFF86EFAC)
+                                    : const Color(0xFFFDE68A),
+                              ),
+                            ),
+                            child: Text(
+                              bus.status.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: bus.status == 'active'
+                                    ? const Color(0xFF16A34A)
+                                    : const Color(0xFFCA8A04),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: const Color(0xFF71717A),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  void _navigateToCreateBus() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const BusManagementPage()),
+    ).then((_) => setState(() {}));
+  }
+
+  void _navigateToEditBus(String busId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => BusManagementPage(busId: busId)),
+    ).then((_) => setState(() {}));
+  }
+
+  Future<void> _deleteBus(String busId) async {
+    try {
+      await _firebaseService.deleteBus(busId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bus deleted successfully')),
+        );
+        setState(() {});
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  Widget _buildEditForm() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFAFAFA),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF18181B)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          _isEditMode ? 'Edit Bus' : 'Add New Bus',
+          style: TextStyle(
+            color: const Color(0xFF18181B),
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -253,32 +573,29 @@ class _BusManagementPageState extends State<BusManagementPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Bus Information Section
             _buildSectionTitle('Bus Information'),
             const SizedBox(height: 12),
             _buildTextField(
               label: 'Bus Number',
               controller: _busNumberController,
-              hintText: 'e.g., BUS-A-001',
-              icon: Icons.directions_bus_outlined,
+              hintText: 'e.g., 154',
+              icon: Icons.numbers,
             ),
             const SizedBox(height: 16),
             _buildTextField(
               label: 'Bus Route',
               controller: _busRouteController,
-              hintText: 'e.g., Route A - Main Campus to City Center',
-              icon: Icons.route_outlined,
-              maxLines: 2,
+              hintText: 'e.g., Route 12 - City Center',
+              icon: Icons.route,
             ),
             const SizedBox(height: 16),
 
-            // Location Information Section
-            _buildSectionTitle('Location Information'),
+            _buildSectionTitle('Locations'),
             const SizedBox(height: 12),
             _buildTextField(
               label: 'Departure Location',
               controller: _departureLocationController,
-              hintText: 'e.g., Main Campus Gate',
+              hintText: 'e.g., Main Terminal',
               icon: Icons.location_on_outlined,
             ),
             const SizedBox(height: 16),
@@ -288,19 +605,23 @@ class _BusManagementPageState extends State<BusManagementPage> {
                   child: _buildTextField(
                     label: 'Departure Latitude',
                     controller: _departureLatController,
-                    hintText: '40.7128',
-                    icon: Icons.public_outlined,
-                    keyboardType: TextInputType.number,
+                    hintText: '13.0827',
+                    icon: Icons.my_location,
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildTextField(
-                    label: 'Longitude',
+                    label: 'Departure Longitude',
                     controller: _departureLonController,
-                    hintText: '-74.0060',
-                    icon: Icons.public_outlined,
-                    keyboardType: TextInputType.number,
+                    hintText: '80.2707',
+                    icon: Icons.my_location,
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                   ),
                 ),
               ],
@@ -309,8 +630,8 @@ class _BusManagementPageState extends State<BusManagementPage> {
             _buildTextField(
               label: 'Arrival Location',
               controller: _arrivalLocationController,
-              hintText: 'e.g., City Center Bus Station',
-              icon: Icons.location_on_outlined,
+              hintText: 'e.g., Downtown Station',
+              icon: Icons.flag_outlined,
             ),
             const SizedBox(height: 16),
             Row(
@@ -319,116 +640,103 @@ class _BusManagementPageState extends State<BusManagementPage> {
                   child: _buildTextField(
                     label: 'Arrival Latitude',
                     controller: _arrivalLatController,
-                    hintText: '40.7489',
-                    icon: Icons.public_outlined,
-                    keyboardType: TextInputType.number,
+                    hintText: '13.0827',
+                    icon: Icons.flag,
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildTextField(
-                    label: 'Longitude',
+                    label: 'Arrival Longitude',
                     controller: _arrivalLonController,
-                    hintText: '-73.9680',
-                    icon: Icons.public_outlined,
-                    keyboardType: TextInputType.number,
+                    hintText: '80.2707',
+                    icon: Icons.flag,
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
-            // Driver Information Section
             _buildSectionTitle('Driver Information'),
             const SizedBox(height: 12),
             FutureBuilder<List<Map<String, dynamic>>>(
               future: _driversFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: CircularProgressIndicator(),
-                  );
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 final drivers = snapshot.data ?? [];
-
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Assign Driver',
+                      'Select Driver',
                       style: TextStyle(
-                        color: const Color(0xFF5C4A3D),
+                        color: const Color(0xFF18181B),
                         fontWeight: FontWeight.w600,
+                        fontSize: 14,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    if (drivers.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.orange[100],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.orange[300]!),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color(0xFFE4E4E7),
+                          width: 1.5,
                         ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.info_outline, color: Colors.orange[700]),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'No drivers available. Please register a driver account first.',
-                                style: TextStyle(color: Colors.orange[700]),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    else
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: const Color(0xFFD4C4B0),
-                            width: 2,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          color: Colors.white,
-                        ),
-                        child: DropdownButton<Map<String, dynamic>>(
-                          isExpanded: true,
-                          underline: const SizedBox(),
-                          hint: const Text('Select a driver'),
-                          value: _selectedDriverObject,
-                          items: drivers.map((driver) {
-                            final driverName =
-                                '${driver['firstName']} ${driver['lastName']}';
-                            return DropdownMenuItem(
-                              value: driver,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(driverName),
-                                  Text(
-                                    driver['email'] ?? '',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (driver) {
-                            if (driver != null) {
-                              _selectDriverFromDropdown(driver);
-                            }
-                          },
-                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white,
                       ),
+                      child: DropdownButton<Map<String, dynamic>>(
+                        isExpanded: true,
+                        underline: const SizedBox(),
+                        hint: Text(
+                          'Select a driver',
+                          style: TextStyle(color: const Color(0xFFA1A1AA)),
+                        ),
+                        value: _selectedDriverObject,
+                        items: drivers.map((driver) {
+                          final driverName =
+                              '${driver['firstName']} ${driver['lastName']}';
+                          return DropdownMenuItem(
+                            value: driver,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  driverName,
+                                  style: TextStyle(
+                                    color: const Color(0xFF18181B),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  driver['email'] ?? '',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: const Color(0xFF71717A),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (driver) {
+                          if (driver != null) {
+                            _selectDriverFromDropdown(driver);
+                          }
+                        },
+                      ),
+                    ),
                     const SizedBox(height: 16),
                   ],
                 );
@@ -443,7 +751,6 @@ class _BusManagementPageState extends State<BusManagementPage> {
             ),
             const SizedBox(height: 16),
 
-            // Vehicle Information Section
             _buildSectionTitle('Vehicle Information'),
             const SizedBox(height: 12),
             _buildTextField(
@@ -454,22 +761,19 @@ class _BusManagementPageState extends State<BusManagementPage> {
             ),
             const SizedBox(height: 16),
 
-            // Status Section
             Text(
               'Bus Status',
               style: TextStyle(
-                color: const Color(0xFF5C4A3D),
+                color: const Color(0xFF18181B),
                 fontWeight: FontWeight.w600,
+                fontSize: 14,
               ),
             ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: const Color(0xFFD4C4B0),
-                  width: 2,
-                ),
+                border: Border.all(color: const Color(0xFFE4E4E7), width: 1.5),
                 borderRadius: BorderRadius.circular(12),
                 color: Colors.white,
               ),
@@ -484,10 +788,10 @@ class _BusManagementPageState extends State<BusManagementPage> {
                       status.toUpperCase(),
                       style: TextStyle(
                         color: status == 'active'
-                            ? Colors.green
+                            ? const Color(0xFF16A34A)
                             : status == 'inactive'
-                                ? Colors.orange
-                                : Colors.red,
+                            ? const Color(0xFFCA8A04)
+                            : const Color(0xFFEF4444),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -502,27 +806,27 @@ class _BusManagementPageState extends State<BusManagementPage> {
             ),
             const SizedBox(height: 32),
 
-            // Save Button
             SizedBox(
               width: double.infinity,
-              height: 56,
+              height: 52,
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _handleSaveBus,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF8B6F47),
-                  disabledBackgroundColor: const Color(0xFFB8A895),
+                  backgroundColor: const Color(0xFF18181B),
+                  disabledBackgroundColor: const Color(0xFFE4E4E7),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  elevation: 4,
+                  elevation: 0,
                 ),
                 child: _isLoading
                     ? const SizedBox(
-                        height: 24,
-                        width: 24,
+                        height: 20,
+                        width: 20,
                         child: CircularProgressIndicator(
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                           strokeWidth: 2,
                         ),
                       )
@@ -531,7 +835,7 @@ class _BusManagementPageState extends State<BusManagementPage> {
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
               ),
@@ -550,9 +854,9 @@ class _BusManagementPageState extends State<BusManagementPage> {
         title,
         style: const TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF8B6F47),
-          letterSpacing: 0.5,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF18181B),
+          letterSpacing: 0.3,
         ),
       ),
     );
@@ -572,47 +876,42 @@ class _BusManagementPageState extends State<BusManagementPage> {
         Text(
           label,
           style: TextStyle(
-            color: const Color(0xFF5C4A3D),
+            color: const Color(0xFF18181B),
             fontWeight: FontWeight.w600,
+            fontSize: 14,
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            hintText: hintText,
-            hintStyle: const TextStyle(color: Color(0xFFB8A895)),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFD4C4B0),
-                width: 2,
-              ),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFE4E4E7), width: 1.5),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            maxLines: maxLines,
+            style: TextStyle(
+              fontSize: 15,
+              color: const Color(0xFF18181B),
+              fontWeight: FontWeight.w400,
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFD4C4B0),
-                width: 2,
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: TextStyle(
+                color: const Color(0xFFA1A1AA),
+                fontWeight: FontWeight.w400,
               ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF8B6F47),
-                width: 2,
+              filled: true,
+              fillColor: Colors.white,
+              border: InputBorder.none,
+              prefixIcon: Icon(icon, color: const Color(0xFF71717A), size: 20),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
               ),
-            ),
-            prefixIcon: Icon(
-              icon,
-              color: const Color(0xFF8B6F47),
             ),
           ),
-          style: const TextStyle(color: Color(0xFF5C4A3D)),
         ),
       ],
     );
